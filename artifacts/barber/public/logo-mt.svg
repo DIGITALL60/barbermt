@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="96" stroke="#1a1a1a" stroke-width="6" fill="white"/>
+  <!-- Inner ring -->
+  <circle cx="100" cy="100" r="84" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+
+  <!-- Scissors left blade -->
+  <line x1="85" y1="55" x2="100" y2="100" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+  <!-- Scissors right blade -->
+  <line x1="115" y1="55" x2="100" y2="100" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+  <!-- Scissors handles left -->
+  <line x1="100" y1="100" x2="80" y2="145" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+  <!-- Scissors handles right -->
+  <line x1="100" y1="100" x2="120" y2="145" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Pivot screw -->
+  <circle cx="100" cy="100" r="4" fill="#1a1a1a"/>
+
+  <!-- Finger holes left -->
+  <ellipse cx="76" cy="152" rx="9" ry="7" stroke="#1a1a1a" stroke-width="3" fill="none" transform="rotate(-15 76 152)"/>
+  <!-- Finger holes right -->
+  <ellipse cx="124" cy="152" rx="9" ry="7" stroke="#1a1a1a" stroke-width="3" fill="none" transform="rotate(15 124 152)"/>
+
+  <!-- M left -->
+  <text x="30" y="108" font-family="Georgia, serif" font-size="32" font-weight="700" fill="#1a1a1a" letter-spacing="1">M</text>
+  <!-- T right -->
+  <text x="148" y="108" font-family="Georgia, serif" font-size="32" font-weight="700" fill="#1a1a1a" letter-spacing="1">T</text>
+</svg>

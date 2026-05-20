@@ -16,16 +16,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex w-full bg-background">
       <aside className="w-64 border-r border-border bg-card hidden md:flex flex-col">
-        <div className="p-6 border-b border-border">
-          <h2 className="text-lg font-black text-primary uppercase tracking-widest flex items-center gap-2">
-            <Scissors className="w-5 h-5" /> New King Barber
-          </h2>
-          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-            <Activity className="w-3 h-3" />
-            Sistema:{" "}
-            {health?.status === "ok"
-              ? <span className="text-green-500">En línea</span>
-              : <span className="text-red-500">Desconectado</span>}
+        <div className="p-5 border-b border-border flex items-center gap-3">
+          <img src="/logo-mt.svg" alt="Barber M.T" className="h-9 w-9 shrink-0" />
+          <div>
+            <h2 className="text-sm font-black text-primary uppercase tracking-widest leading-none">Barber M.T</h2>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+              <Activity className="w-3 h-3" />
+              {health?.status === "ok"
+                ? <span className="text-green-500">En línea</span>
+                : <span className="text-red-500">Desconectado</span>}
+            </div>
           </div>
         </div>
 
@@ -34,13 +34,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href}>
-                <div
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer text-sm ${
-                    isActive
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
-                >
+                <div className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer text-sm ${
+                  isActive
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}>
                   <item.icon className="w-4 h-4 shrink-0" />
                   {item.label}
                 </div>
