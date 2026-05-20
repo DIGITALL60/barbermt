@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: New King Barber - API de turnos
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: barbers
+    description: Barberos
+  - name: services
+    description: Servicios
+  - name: appointments
+    description: Turnos
+  - name: availability
+    description: Disponibilidad
+  - name: dashboard
+    description: Panel de control
+  - name: whatsapp
+    description: WhatsApp Bot
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,358 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /barbers:
+    get:
+      operationId: listBarbers
+      tags: [barbers]
+      summary: Listar barberos
+      parameters:
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Lista de barberos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Barber"
+    post:
+      operationId: createBarber
+      tags: [barbers]
+      summary: Crear barbero
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BarberInput"
+      responses:
+        "201":
+          description: Barbero creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Barber"
+
+  /barbers/{id}:
+    patch:
+      operationId: updateBarber
+      tags: [barbers]
+      summary: Actualizar barbero
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BarberUpdate"
+      responses:
+        "200":
+          description: Barbero actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Barber"
+        "404":
+          description: No encontrado
+    delete:
+      operationId: deleteBarber
+      tags: [barbers]
+      summary: Eliminar barbero
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Eliminado
+
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: Listar servicios
+      parameters:
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Lista de servicios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Crear servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Servicio creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Actualizar servicio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Servicio actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: No encontrado
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Eliminar servicio
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Eliminado
+
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: Listar turnos
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: barberId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de turnos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Crear turno
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Turno creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "409":
+          description: Horario no disponible
+
+  /appointments/{id}:
+    get:
+      operationId: getAppointment
+      tags: [appointments]
+      summary: Obtener turno
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Turno
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          description: No encontrado
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Actualizar turno
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentUpdate"
+      responses:
+        "200":
+          description: Turno actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          description: No encontrado
+    delete:
+      operationId: deleteAppointment
+      tags: [appointments]
+      summary: Cancelar turno
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Cancelado
+
+  /availability:
+    get:
+      operationId: getAvailability
+      tags: [availability]
+      summary: Obtener horarios disponibles
+      parameters:
+        - name: barberId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: serviceId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Horarios disponibles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponse"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Resumen del dashboard
+      responses:
+        "200":
+          description: Resumen de métricas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /appointments/today:
+    get:
+      operationId: getTodayAppointments
+      tags: [appointments]
+      summary: Turnos de hoy
+      responses:
+        "200":
+          description: Turnos de hoy
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+
+  /whatsapp/webhook:
+    get:
+      operationId: verifyWhatsappWebhook
+      tags: [whatsapp]
+      summary: Verificar webhook de WhatsApp
+      parameters:
+        - name: hub.mode
+          in: query
+          schema:
+            type: string
+        - name: hub.verify_token
+          in: query
+          schema:
+            type: string
+        - name: hub.challenge
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verificado
+    post:
+      operationId: receiveWhatsappMessage
+      tags: [whatsapp]
+      summary: Recibir mensaje de WhatsApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsappWebhookPayload"
+      responses:
+        "200":
+          description: OK
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +397,207 @@ components:
       required:
         - status
 
+    Barber:
+      type: object
+      required: [id, name, active, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        bio:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    BarberInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+        photoUrl:
+          type: string
+
+    BarberUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        bio:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+        active:
+          type: boolean
+
+    Service:
+      type: object
+      required: [id, name, price, durationMinutes, active, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        price:
+          type: number
+        durationMinutes:
+          type: integer
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    ServiceInput:
+      type: object
+      required: [name, price, durationMinutes]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        price:
+          type: number
+        durationMinutes:
+          type: integer
+
+    ServiceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: ["string", "null"]
+        price:
+          type: number
+        durationMinutes:
+          type: integer
+        active:
+          type: boolean
+
+    Appointment:
+      type: object
+      required: [id, barberId, serviceId, clientName, clientPhone, date, timeSlot, status, createdAt]
+      properties:
+        id:
+          type: integer
+        barberId:
+          type: integer
+        barberName:
+          type: ["string", "null"]
+        serviceId:
+          type: integer
+        serviceName:
+          type: ["string", "null"]
+        servicePrice:
+          type: ["number", "null"]
+        clientName:
+          type: string
+        clientPhone:
+          type: string
+        date:
+          type: string
+        timeSlot:
+          type: string
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AppointmentInput:
+      type: object
+      required: [barberId, serviceId, clientName, clientPhone, date, timeSlot]
+      properties:
+        barberId:
+          type: integer
+        serviceId:
+          type: integer
+        clientName:
+          type: string
+          minLength: 1
+        clientPhone:
+          type: string
+          minLength: 1
+        date:
+          type: string
+        timeSlot:
+          type: string
+        notes:
+          type: string
+
+    AppointmentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        timeSlot:
+          type: string
+        date:
+          type: string
+
+    AvailabilityResponse:
+      type: object
+      required: [date, barberId, slots]
+      properties:
+        date:
+          type: string
+        barberId:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSlot"
+
+    TimeSlot:
+      type: object
+      required: [time, available]
+      properties:
+        time:
+          type: string
+        available:
+          type: boolean
+
+    DashboardSummary:
+      type: object
+      required: [todayCount, weekCount, pendingCount, confirmedCount, totalRevenue, topService, topBarber]
+      properties:
+        todayCount:
+          type: integer
+        weekCount:
+          type: integer
+        pendingCount:
+          type: integer
+        confirmedCount:
+          type: integer
+        totalRevenue:
+          type: number
+        topService:
+          type: ["string", "null"]
+        topBarber:
+          type: ["string", "null"]
+
+    WhatsappWebhookPayload:
+      type: object
+      properties:
+        object:
+          type: string
+        entry:
+          type: array
+          items:
+            type: object
