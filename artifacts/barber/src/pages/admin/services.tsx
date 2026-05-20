@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/layout/admin-layout";
-import { 
-  useListServices, 
-  useCreateService, 
-  useUpdateService, 
+import {
+  useListServices,
+  useCreateService,
+  useUpdateService,
   useDeleteService,
   getListServicesQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Clock, DollarSign, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Clock, Scissors, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type ServiceForm = { id?: number, name: string, description: string, price: string, durationMinutes: string, active: boolean };
@@ -23,27 +23,23 @@ type ServiceForm = { id?: number, name: string, description: string, price: stri
 export default function ServicesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const { data: services, isLoading } = useListServices();
   const createService = useCreateService();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<ServiceForm>({ name: "", description: "", price: "0", durationMinutes: "30", active: true });
+  const [formData, setFormData] = useState<ServiceForm>({ name: "", description: "", price: "", durationMinutes: "30", active: true });
 
   const handleOpenDialog = (service?: ServiceForm) => {
-    if (service) {
-      setFormData(service);
-    } else {
-      setFormData({ name: "", description: "", price: "", durationMinutes: "30", active: true });
-    }
+    setFormData(service ?? { name: "", description: "", price: "", durationMinutes: "30", active: true });
     setIsOpen(true);
   };
 
   const handleSave = () => {
-    if (!formData.name || !formData.price || !formData.durationMinutes) {
-      toast({ title: "Name, price, and duration are required", variant: "destructive" });
+    if (!formData.name.trim() || !formData.price || !formData.durationMinutes) {
+      toast({ title: "Nombre, precio y duración son obligatorios", variant: "destructive" });
       return;
     }
 
@@ -59,7 +55,7 @@ export default function ServicesPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListServicesQueryKey() });
           setIsOpen(false);
-          toast({ title: "Service updated" });
+          toast({ title: "Servicio actualizado" });
         }
       });
     } else {
@@ -67,7 +63,7 @@ export default function ServicesPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListServicesQueryKey() });
           setIsOpen(false);
-          toast({ title: "Service created" });
+          toast({ title: "Servicio creado" });
         }
       });
     }
@@ -77,17 +73,17 @@ export default function ServicesPage() {
     updateService.mutate({ id, data: { active } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListServicesQueryKey() });
-        toast({ title: active ? "Service activated" : "Service deactivated" });
+        toast({ title: active ? "Servicio activado" : "Servicio desactivado" });
       }
     });
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this service?")) {
+    if (confirm("¿Confirmás que querés eliminar este servicio?")) {
       deleteService.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListServicesQueryKey() });
-          toast({ title: "Service deleted" });
+          toast({ title: "Servicio eliminado" });
         }
       });
     }
@@ -98,11 +94,11 @@ export default function ServicesPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Services</h1>
-            <p className="text-muted-foreground mt-2">Manage what you offer</p>
+            <h1 className="text-3xl font-bold">Servicios</h1>
+            <p className="text-muted-foreground mt-1">Gestioná tu menú de servicios</p>
           </div>
           <Button onClick={() => handleOpenDialog()} className="gap-2">
-            <Plus className="w-4 h-4" /> Add Service
+            <Plus className="w-4 h-4" /> Agregar servicio
           </Button>
         </div>
 
@@ -111,34 +107,36 @@ export default function ServicesPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {services?.map(service => (
-              <Card key={service.id} className={service.active ? "" : "opacity-60 grayscale-[0.5]"}>
+              <Card key={service.id} className={service.active ? "" : "opacity-60 grayscale-[0.4]"}>
                 <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold">{service.name}</CardTitle>
-                    <div className="text-xl font-bold text-primary">${service.price}</div>
+                  <div className="flex justify-between items-start gap-2">
+                    <CardTitle className="text-lg font-bold leading-tight">{service.name}</CardTitle>
+                    <div className="text-xl font-black text-primary shrink-0">
+                      ${Number(service.price).toLocaleString("es-AR")}
+                    </div>
                   </div>
-                  <div className="flex items-center text-sm text-muted-foreground mt-2">
-                    <Clock className="w-3.5 h-3.5 mr-1" />
-                    {service.durationMinutes} mins
+                  <div className="flex items-center text-sm text-muted-foreground mt-1 gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {service.durationMinutes} min
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground min-h-[2.5rem] mt-2">
-                    {service.description || "No description provided."}
+                  <p className="text-sm text-muted-foreground min-h-[2.5rem]">
+                    {service.description || "Sin descripción."}
                   </p>
-                  
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-                    <div className="flex items-center space-x-2">
-                      <Switch 
-                        checked={service.active} 
+
+                  <div className="flex items-center justify-between mt-5 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={service.active}
                         onCheckedChange={(c) => handleToggleActive(service.id, c)}
                         disabled={updateService.isPending}
                       />
-                      <Label className="text-xs text-muted-foreground">Active</Label>
+                      <Label className="text-xs text-muted-foreground">Activo</Label>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog({
                         id: service.id,
                         name: service.name,
@@ -157,10 +155,11 @@ export default function ServicesPage() {
                 </CardContent>
               </Card>
             ))}
-            
+
             {!services?.length && (
-              <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-lg">
-                No services found. Add your first service!
+              <div className="col-span-full py-14 text-center text-muted-foreground border-2 border-dashed border-border rounded-lg">
+                <Scissors className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p>No hay servicios. Agregá el primero.</p>
               </div>
             )}
           </div>
@@ -169,51 +168,54 @@ export default function ServicesPage() {
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{formData.id ? "Edit Service" : "Add Service"}</DialogTitle>
+              <DialogTitle>{formData.id ? "Editar servicio" : "Agregar servicio"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Name</Label>
-                <Input 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})} 
-                  placeholder="Haircut & Beard"
+                <Label>Nombre</Label>
+                <Input
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Corte + barba"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Price ($)</Label>
-                  <Input 
+                  <Label>Precio ($)</Label>
+                  <Input
                     type="number"
-                    value={formData.price} 
-                    onChange={e => setFormData({...formData, price: e.target.value})} 
-                    placeholder="30"
+                    value={formData.price}
+                    onChange={e => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="4500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Duration (mins)</Label>
-                  <Input 
+                  <Label>Duración (min)</Label>
+                  <Input
                     type="number"
                     step="5"
-                    value={formData.durationMinutes} 
-                    onChange={e => setFormData({...formData, durationMinutes: e.target.value})} 
-                    placeholder="45"
+                    value={formData.durationMinutes}
+                    onChange={e => setFormData({ ...formData, durationMinutes: e.target.value })}
+                    placeholder="30"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea 
-                  value={formData.description} 
-                  onChange={e => setFormData({...formData, description: e.target.value})} 
-                  placeholder="Full service including..."
+                <Label>Descripción (opcional)</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Incluye..."
+                  className="resize-none"
+                  rows={2}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
               <Button onClick={handleSave} disabled={createService.isPending || updateService.isPending}>
-                Save
+                {(createService.isPending || updateService.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Guardar
               </Button>
             </DialogFooter>
           </DialogContent>
