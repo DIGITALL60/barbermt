@@ -1,0 +1,577 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, MapPin, Phone, User, LogOut, Settings, Check } from 'lucide-react';
+
+export default function BarberiaApp() {
+  const [vista, setVista] = useState('cliente'); // 'cliente' o 'barbero'
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  const [contraseña, setContraseña] = useState('');
+  const [mostrarLogin, setMostrarLogin] = useState(false);
+
+  return (
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
+      <style>{`
+        * {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body { margin: 0; padding: 0; }
+        input, select { font-size: 16px; }
+        button:active { transform: scale(0.98); }
+      `}</style>
+
+      {/* HEADER PRINCIPAL */}
+      <header className="bg-black shadow-lg border-b-4" style={{ borderColor: '#d4af37' }}>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">✂️</div>
+            <h1 className="text-2xl font-bold text-white">BARBER ELITE</h1>
+          </div>
+          {usuarioActual && (
+            <button
+              onClick={() => {
+                setUsuarioActual(null);
+                setVista('cliente');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+            >
+              <LogOut size={18} /> Salir
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {!usuarioActual ? (
+          <Login 
+            onLoginCliente={(nombre, telefono) => {
+              setUsuarioActual({ tipo: 'cliente', nombre, telefono });
+              setVista('cliente');
+              setMostrarLogin(false);
+            }}
+            onLoginBarbero={(contraseña) => {
+              if (contraseña === 'barber123') {
+                setUsuarioActual({ tipo: 'barbero' });
+                setVista('barbero');
+                setMostrarLogin(false);
+              } else {
+                alert('Contraseña incorrecta');
+              }
+            }}
+          />
+        ) : usuarioActual.tipo === 'cliente' ? (
+          <VistaCliente usuario={usuarioActual} />
+        ) : (
+          <VistaBarbero />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ======================== LOGIN ========================
+function Login({ onLoginCliente, onLoginBarbero }) {
+  const [nombre, setNombre] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [contraseña, setContraseña] = useState('');
+  const [esCliente, setEsCliente] = useState(true);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (esCliente) {
+      if (nombre.trim() && telefono.trim()) {
+        onLoginCliente(nombre, telefono);
+      }
+    } else {
+      onLoginBarbero(contraseña);
+    }
+  };
+
+  return (
+    <div className="flex gap-8 justify-center flex-wrap">
+      {/* TARJETA CLIENTE */}
+      {esCliente && (
+        <div className="w-96 bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-yellow-600">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <User size={24} /> Agendar Turno
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Tu Nombre</label>
+              <input
+                type="text"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Juan Pérez"
+                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Tu Teléfono (WhatsApp)</label>
+              <input
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="+34 600 123 456"
+                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg transition mt-6"
+            >
+              Continuar
+            </button>
+          </form>
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setEsCliente(false)}
+              className="text-yellow-400 hover:text-yellow-300 text-sm underline"
+            >
+              ¿Eres barbero?
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TARJETA BARBERO */}
+      {!esCliente && (
+        <div className="w-96 bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl shadow-2xl border border-yellow-600">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <Settings size={24} /> Panel de Barbero
+          </h2>
+          <form onSubmit={(e) => { e.preventDefault(); onLoginBarbero(contraseña); }} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Contraseña</label>
+              <input
+                type="password"
+                value={contraseña}
+                onChange={(e) => setContraseña(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg transition mt-6"
+            >
+              Acceder
+            </button>
+          </form>
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => { setEsCliente(true); setContraseña(''); }}
+              className="text-yellow-400 hover:text-yellow-300 text-sm underline"
+            >
+              Volver al agendamiento
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ======================== VISTA CLIENTE ========================
+function VistaCliente({ usuario }) {
+  const [paso, setPaso] = useState(1); // 1: seleccionar fecha, 2: seleccionar hora, 3: confirmar
+  const [fechaSeleccionada, setFechaSeleccionada] = useState('');
+  const [horaSeleccionada, setHoraSeleccionada] = useState('');
+  const [servicio, setServicio] = useState('corte');
+  const [turnoConfirmado, setTurnoConfirmado] = useState(null);
+
+  // Datos simulados - en producción viendría de la BD
+  const horarioDisponible = {
+    lunes: ['09:00', '09:30', '10:00', '10:30', '11:00'],
+    martes: ['14:00', '14:30', '15:00', '15:30'],
+    miércoles: ['09:00', '10:00', '11:00', '16:00'],
+    jueves: ['14:00', '15:00', '16:00'],
+    viernes: ['09:00', '09:30', '10:00', '11:00', '15:00', '16:00'],
+    sábado: ['10:00', '10:30', '11:00', '11:30', '12:00'],
+  };
+
+  const servicios = [
+    { id: 'corte', nombre: 'Corte Clásico', precio: '$25', tiempo: '30 min' },
+    { id: 'barba', nombre: 'Afeitado + Barba', precio: '$30', tiempo: '45 min' },
+    { id: 'completo', nombre: 'Corte + Barba', precio: '$45', tiempo: '60 min' },
+    { id: 'tintura', nombre: 'Tintura', precio: '$35', tiempo: '40 min' },
+  ];
+
+  const handleConfirmarTurno = async () => {
+    if (!fechaSeleccionada || !horaSeleccionada) return;
+
+    const turno = {
+      id: Math.random().toString(36),
+      cliente: usuario.nombre,
+      telefono: usuario.telefono,
+      fecha: fechaSeleccionada,
+      hora: horaSeleccionada,
+      servicio: servicios.find(s => s.id === servicio)?.nombre,
+      estado: 'confirmado',
+    };
+
+    setTurnoConfirmado(turno);
+
+    // En producción: enviar a backend
+    // await fetch('/api/turnos', { method: 'POST', body: JSON.stringify(turno) })
+    console.log('Turno agendado:', turno);
+  };
+
+  if (turnoConfirmado) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-gradient-to-br from-green-600 to-green-700 p-8 rounded-2xl shadow-2xl text-white text-center border-4 border-green-400">
+          <div className="text-6xl mb-4">✅</div>
+          <h2 className="text-3xl font-bold mb-4">¡Turno Confirmado!</h2>
+          <p className="text-lg mb-6">Te enviaremos un recordatorio a tu WhatsApp</p>
+
+          <div className="bg-black bg-opacity-40 p-6 rounded-xl mb-6 space-y-3 text-left">
+            <div className="flex items-center gap-3">
+              <User size={20} />
+              <span><strong>Cliente:</strong> {turnoConfirmado.cliente}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Calendar size={20} />
+              <span><strong>Fecha:</strong> {turnoConfirmado.fecha}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Clock size={20} />
+              <span><strong>Hora:</strong> {turnoConfirmado.hora}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check size={20} />
+              <span><strong>Servicio:</strong> {turnoConfirmado.servicio}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Phone size={20} />
+              <span><strong>Teléfono:</strong> {turnoConfirmado.telefono}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setPaso(1);
+              setFechaSeleccionada('');
+              setHoraSeleccionada('');
+              setTurnoConfirmado(null);
+            }}
+            className="bg-white text-green-600 font-bold px-6 py-3 rounded-lg hover:bg-gray-100 transition"
+          >
+            Agendar Otro Turno
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* PASOS */}
+      <div className="flex gap-4 mb-8 justify-center">
+        {[1, 2, 3].map((p) => (
+          <div
+            key={p}
+            className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition ${
+              paso >= p
+                ? 'bg-yellow-500 text-black'
+                : 'bg-gray-700 text-gray-400'
+            }`}
+          >
+            {p}
+          </div>
+        ))}
+      </div>
+
+      {/* PASO 1: SERVICIOS Y FECHA */}
+      {paso === 1 && (
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Elige tu Servicio</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {servicios.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setServicio(s.id)}
+                  className={`p-4 rounded-lg transition border-2 ${
+                    servicio === s.id
+                      ? 'bg-yellow-500 text-black border-yellow-600'
+                      : 'bg-gray-800 text-white border-gray-700 hover:border-yellow-500'
+                  }`}
+                >
+                  <div className="font-bold">{s.nombre}</div>
+                  <div className="text-sm opacity-80">{s.tiempo}</div>
+                  <div className="text-lg font-bold mt-2">{s.precio}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Selecciona el Día</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {Object.keys(horarioDisponible).map((dia) => (
+                <button
+                  key={dia}
+                  onClick={() => {
+                    setFechaSeleccionada(dia);
+                    setPaso(2);
+                  }}
+                  className="p-4 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border-2 border-gray-700 hover:border-yellow-500 transition uppercase text-sm font-bold"
+                >
+                  {dia}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              if (fechaSeleccionada) setPaso(2);
+            }}
+            disabled={!fechaSeleccionada}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-black font-bold py-3 rounded-lg transition"
+          >
+            Continuar →
+          </button>
+        </div>
+      )}
+
+      {/* PASO 2: HORA */}
+      {paso === 2 && (
+        <div className="space-y-6">
+          <div className="bg-gray-800 p-4 rounded-lg text-white">
+            <p className="text-sm text-gray-300">Día seleccionado:</p>
+            <p className="text-2xl font-bold text-yellow-400">{fechaSeleccionada.toUpperCase()}</p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Elige tu Horario</h2>
+            <div className="grid grid-cols-4 gap-3">
+              {horarioDisponible[fechaSeleccionada]?.map((hora) => (
+                <button
+                  key={hora}
+                  onClick={() => setHoraSeleccionada(hora)}
+                  className={`p-4 rounded-lg transition border-2 font-bold ${
+                    horaSeleccionada === hora
+                      ? 'bg-yellow-500 text-black border-yellow-600'
+                      : 'bg-gray-800 text-white border-gray-700 hover:border-yellow-500'
+                  }`}
+                >
+                  {hora}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => setPaso(1)}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition"
+            >
+              ← Atrás
+            </button>
+            <button
+              onClick={() => setPaso(3)}
+              disabled={!horaSeleccionada}
+              className="flex-1 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-black font-bold py-3 rounded-lg transition"
+            >
+              Continuar →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PASO 3: CONFIRMAR */}
+      {paso === 3 && (
+        <div className="space-y-6">
+          <div className="bg-gray-800 p-6 rounded-xl space-y-4 text-white">
+            <h2 className="text-2xl font-bold mb-4">Resumen de tu Turno</h2>
+
+            <div className="space-y-3 border-b border-gray-700 pb-4">
+              <div className="flex justify-between">
+                <span className="text-gray-300">Cliente:</span>
+                <span className="font-bold">{usuario.nombre}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-300">Teléfono:</span>
+                <span className="font-bold">{usuario.telefono}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-300">Servicio:</span>
+                <span className="font-bold">{servicios.find(s => s.id === servicio)?.nombre}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-300">Día:</span>
+                <span className="font-bold text-yellow-400">{fechaSeleccionada.toUpperCase()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-300">Hora:</span>
+                <span className="font-bold text-yellow-400">{horaSeleccionada}</span>
+              </div>
+            </div>
+
+            <div className="bg-yellow-500 bg-opacity-20 border border-yellow-500 p-4 rounded-lg">
+              <p className="text-sm text-yellow-200">
+                📱 Recibirás un mensaje de WhatsApp confirmando tu turno y un recordatorio 1 hora antes.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => setPaso(2)}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition"
+            >
+              ← Atrás
+            </button>
+            <button
+              onClick={handleConfirmarTurno}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition text-lg"
+            >
+              ✓ Confirmar Turno
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ======================== VISTA BARBERO ========================
+function VistaBarbero() {
+  const [tab, setTab] = useState('turnos'); // 'turnos', 'disponibilidad'
+  const [turnos, setTurnos] = useState([
+    { id: 1, cliente: 'Juan', telefono: '+34 600 123', fecha: 'lunes', hora: '09:00', servicio: 'Corte', estado: 'confirmado' },
+    { id: 2, cliente: 'Pedro', telefono: '+34 601 456', fecha: 'martes', hora: '14:00', servicio: 'Barba', estado: 'confirmado' },
+  ]);
+
+  const [disponibilidad, setDisponibilidad] = useState({
+    lunes: { habilitado: true, horas: '09:00-18:00' },
+    martes: { habilitado: true, horas: '14:00-20:00' },
+    miércoles: { habilitado: false, horas: '' },
+    jueves: { habilitado: true, horas: '14:00-20:00' },
+    viernes: { habilitado: true, horas: '09:00-20:00' },
+    sábado: { habilitado: true, horas: '10:00-15:00' },
+  });
+
+  const handleToggleDisponibilidad = (dia) => {
+    setDisponibilidad({
+      ...disponibilidad,
+      [dia]: {
+        ...disponibilidad[dia],
+        habilitado: !disponibilidad[dia].habilitado,
+      },
+    });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      {/* TABS */}
+      <div className="flex gap-4 mb-8 border-b border-gray-700">
+        <button
+          onClick={() => setTab('turnos')}
+          className={`px-6 py-3 font-bold transition border-b-4 ${
+            tab === 'turnos'
+              ? 'border-yellow-500 text-yellow-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          📅 Mis Turnos
+        </button>
+        <button
+          onClick={() => setTab('disponibilidad')}
+          className={`px-6 py-3 font-bold transition border-b-4 ${
+            tab === 'disponibilidad'
+              ? 'border-yellow-500 text-yellow-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          ⚙️ Disponibilidad
+        </button>
+      </div>
+
+      {/* TAB: TURNOS */}
+      {tab === 'turnos' && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white mb-6">Turnos Agendados</h2>
+          {turnos.length === 0 ? (
+            <div className="bg-gray-800 p-8 rounded-lg text-center text-gray-400">
+              No hay turnos agendados
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {turnos.map((turno) => (
+                <div
+                  key={turno.id}
+                  className="bg-gray-800 p-6 rounded-lg border-l-4 border-yellow-500 flex justify-between items-center"
+                >
+                  <div className="text-white flex-1">
+                    <div className="font-bold text-lg">{turno.cliente}</div>
+                    <div className="text-sm text-gray-400 mt-2">
+                      📅 {turno.fecha.toUpperCase()} | 🕐 {turno.hora} | {turno.servicio}
+                    </div>
+                    <div className="text-sm text-gray-400">📱 {turno.telefono}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition text-sm">
+                      ✓ Completar
+                    </button>
+                    <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition text-sm">
+                      ✕ Cancelar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: DISPONIBILIDAD */}
+      {tab === 'disponibilidad' && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white mb-6">Configura tu Disponibilidad</h2>
+          <div className="space-y-4">
+            {Object.entries(disponibilidad).map(([dia, config]) => (
+              <div
+                key={dia}
+                className="bg-gray-800 p-6 rounded-lg flex items-center justify-between"
+              >
+                <div className="text-white flex-1">
+                  <div className="font-bold text-lg uppercase">{dia}</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="text"
+                    placeholder="09:00-18:00"
+                    value={config.horas}
+                    onChange={(e) => {
+                      setDisponibilidad({
+                        ...disponibilidad,
+                        [dia]: { ...config, horas: e.target.value },
+                      });
+                    }}
+                    disabled={!config.habilitado}
+                    className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.habilitado}
+                      onChange={() => handleToggleDisponibilidad(dia)}
+                      className="w-5 h-5"
+                    />
+                    <span className="text-white text-sm">
+                      {config.habilitado ? 'Abierto' : 'Cerrado'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg transition">
+            💾 Guardar Cambios
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

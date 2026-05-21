@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, Users, Scissors, LayoutDashboard, ExternalLink, Activity } from "lucide-react";
+import { Calendar, Users, Scissors, LayoutDashboard, ExternalLink, Activity, Clock } from "lucide-react";
 import { useHealthCheck } from "@workspace/api-client-react";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/admin", label: "Panel", icon: LayoutDashboard },
     { href: "/admin/appointments", label: "Turnos", icon: Calendar },
+    { href: "/admin/schedule", label: "Disponibilidad", icon: Clock },
     { href: "/admin/barbers", label: "Barberos", icon: Users },
     { href: "/admin/services", label: "Servicios", icon: Scissors },
   ];

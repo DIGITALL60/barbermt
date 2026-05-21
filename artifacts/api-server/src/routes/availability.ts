@@ -1,24 +1,19 @@
 import { Router } from "express";
-import { db, appointmentsTable, servicesTable } from "@workspace/db";
+import { db, appointmentsTable, servicesTable, scheduleTable } from "@workspace/db";
 import { and, eq, sql } from "drizzle-orm";
 import { GetAvailabilityQueryParams } from "@workspace/api-zod";
 
 const router = Router();
 
-const BUSINESS_HOURS = {
-  start: 9,
-  end: 20,
-  intervalMinutes: 30,
-};
+const DEFAULT_INTERVAL = 30;
 
-function generateSlots(durationMinutes: number): string[] {
+function generateSlots(startHour: number, endHour: number, durationMinutes: number): string[] {
   const slots: string[] = [];
-  const { start, end, intervalMinutes } = BUSINESS_HOURS;
-  for (let hour = start; hour < end; hour++) {
-    for (let minute = 0; minute < 60; minute += intervalMinutes) {
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += DEFAULT_INTERVAL) {
       const slotStart = hour * 60 + minute;
       const slotEnd = slotStart + durationMinutes;
-      if (slotEnd <= end * 60) {
+      if (slotEnd <= endHour * 60) {
         const h = String(hour).padStart(2, "0");
         const m = String(minute).padStart(2, "0");
         slots.push(`${h}:${m}`);
@@ -54,7 +49,26 @@ router.get("/", async (req, res) => {
 
   const { barberId, date, serviceId } = query.data;
 
-  let durationMinutes = BUSINESS_HOURS.intervalMinutes;
+  // Verificar si el día de la semana está habilitado en el horario
+  const dateObj = new Date(date + "T12:00:00");
+  const dayOfWeek = dateObj.getDay(); // 0=Dom...6=Sáb
+
+  const scheduleRows = await db
+    .select()
+    .from(scheduleTable)
+    .where(eq(scheduleTable.dayOfWeek, dayOfWeek))
+    .limit(1);
+
+  // Si hay configuración de horario y está deshabilitado, retornar sin slots
+  if (scheduleRows.length > 0 && !scheduleRows[0].enabled) {
+    res.json({ date, barberId, slots: [], dayDisabled: true });
+    return;
+  }
+
+  const startHour = scheduleRows[0]?.startHour ?? 9;
+  const endHour = scheduleRows[0]?.endHour ?? 20;
+
+  let durationMinutes = DEFAULT_INTERVAL;
   if (serviceId) {
     const service = await db
       .select({ durationMinutes: servicesTable.durationMinutes })
@@ -81,11 +95,11 @@ router.get("/", async (req, res) => {
       )
     );
 
-  const allSlots = generateSlots(durationMinutes);
+  const allSlots = generateSlots(startHour, endHour, durationMinutes);
 
   const slots = allSlots.map((time) => {
     const hasConflict = booked.some((b) =>
-      isSlotConflict(time, durationMinutes, b.timeSlot, b.durationMinutes ?? BUSINESS_HOURS.intervalMinutes)
+      isSlotConflict(time, durationMinutes, b.timeSlot, b.durationMinutes ?? DEFAULT_INTERVAL)
     );
     return { time, available: !hasConflict };
   });

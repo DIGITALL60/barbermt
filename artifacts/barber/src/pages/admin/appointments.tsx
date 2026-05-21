@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Check, X, Loader2, Trash2, Eye } from "lucide-react";
+import { Calendar as CalendarIcon, Check, X, Loader2, Trash2, Eye, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -92,6 +92,12 @@ function AppointmentDetailsDialog({ id, open, onOpenChange }: { id: number | nul
   );
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
+function handleExportCSV() {
+  window.open(`${API_BASE}/api/appointments/export`, "_blank");
+}
+
 export default function AppointmentsPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [barberId, setBarberId] = useState<string>("all");
@@ -147,9 +153,15 @@ export default function AppointmentsPage() {
         onOpenChange={(o) => !o && setSelectedAptId(null)}
       />
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Turnos</h1>
-          <p className="text-muted-foreground mt-1">Gestioná todas las reservas</p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-bold">Turnos</h1>
+            <p className="text-muted-foreground mt-1">Gestioná todas las reservas</p>
+          </div>
+          <Button variant="outline" onClick={handleExportCSV} className="gap-2 shrink-0">
+            <Download className="w-4 h-4" />
+            Exportar CSV
+          </Button>
         </div>
 
         <Card>

@@ -6,6 +6,7 @@ import appointmentsRouter from "./appointments";
 import availabilityRouter from "./availability";
 import dashboardRouter from "./dashboard";
 import whatsappRouter from "./whatsapp";
+import scheduleRouter from "./schedule";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use("/appointments", appointmentsRouter);
 router.use("/availability", availabilityRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/whatsapp", whatsappRouter);
+router.use("/schedule", scheduleRouter);
 
 export default router;

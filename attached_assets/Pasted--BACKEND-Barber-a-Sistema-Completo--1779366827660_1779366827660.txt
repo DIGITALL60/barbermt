@@ -1,0 +1,330 @@
+// =========================================
+// BACKEND: Barbería Sistema Completo
+// =========================================
+// Instala las dependencias:
+// npm install express cors dotenv axios mysql2 node-cron
+// npm install twilio  (o usa Baileys para WhatsApp local)
+
+const express = require('express');
+const cors = require('cors');
+const cron = require('node-cron');
+const axios = require('axios');
+require('dotenv').config();
+
+// Para Twilio (WhatsApp API oficial):
+// const twilio = require('twilio');
+// const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// =========================================
+// SIMULACIÓN DE BD (en producción: MySQL/PostgreSQL)
+// =========================================
+let turnos = [];
+let disponibilidad = {
+  lunes: { habilitado: true, horasDisponibles: ['09:00', '09:30', '10:00', '10:30', '11:00'] },
+  martes: { habilitado: true, horasDisponibles: ['14:00', '14:30', '15:00', '15:30'] },
+  miércoles: { habilitado: false, horasDisponibles: [] },
+  jueves: { habilitado: true, horasDisponibles: ['14:00', '15:00', '16:00'] },
+  viernes: { habilitado: true, horasDisponibles: ['09:00', '09:30', '10:00', '11:00', '15:00', '16:00'] },
+  sábado: { habilitado: true, horasDisponibles: ['10:00', '10:30', '11:00', '11:30', '12:00'] },
+};
+
+// =========================================
+// FUNCIONES DE WHATSAPP
+// =========================================
+
+// OPCIÓN 1: Usando Twilio (recomendado para producción)
+async function enviarMensajeTwilio(telefono, mensaje) {
+  try {
+    await twilioClient.messages.create({
+      body: mensaje,
+      from: process.env.TWILIO_WHATSAPP_NUMBER, // ej: 'whatsapp:+1234567890'
+      to: `whatsapp:${telefono}`
+    });
+    console.log('✓ Mensaje enviado a', telefono);
+  } catch (error) {
+    console.error('❌ Error al enviar WhatsApp:', error.message);
+  }
+}
+
+// OPCIÓN 2: Usando API de Meta (WhatsApp Business API)
+async function enviarMensajeMeta(telefono, mensaje) {
+  try {
+    const accessToken = process.env.META_ACCESS_TOKEN;
+    const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+    
+    const url = `https://graph.instagram.com/v18.0/${phoneNumberId}/messages`;
+    
+    await axios.post(url, {
+      messaging_product: 'whatsapp',
+      to: telefono,
+      type: 'text',
+      text: { body: mensaje }
+    }, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    
+    console.log('✓ Mensaje enviado a', telefono);
+  } catch (error) {
+    console.error('❌ Error al enviar WhatsApp:', error.message);
+  }
+}
+
+// Función genérica (elige la opción que uses)
+async function enviarWhatsApp(telefono, mensaje) {
+  // Descomenta la que uses:
+  // await enviarMensajeTwilio(telefono, mensaje);
+  
+  // Para testing, aquí simulamos:
+  console.log(`📱 WhatsApp enviado a ${telefono}:\n${mensaje}\n`);
+}
+
+// =========================================
+// ENDPOINTS API
+// =========================================
+
+// 1️⃣ CREAR NUEVO TURNO
+app.post('/api/turnos', async (req, res) => {
+  try {
+    const { cliente, telefono, fecha, hora, servicio } = req.body;
+
+    // Validación básica
+    if (!cliente || !telefono || !fecha || !hora || !servicio) {
+      return res.status(400).json({ error: 'Faltan datos requeridos' });
+    }
+
+    // Verificar disponibilidad
+    if (!disponibilidad[fecha]?.habilitado) {
+      return res.status(400).json({ error: 'El día no está disponible' });
+    }
+
+    if (!disponibilidad[fecha].horasDisponibles.includes(hora)) {
+      return res.status(400).json({ error: 'La hora no está disponible' });
+    }
+
+    // Crear turno
+    const nuevoTurno = {
+      id: Date.now(),
+      cliente,
+      telefono,
+      fecha,
+      hora,
+      servicio,
+      estado: 'confirmado',
+      fechaCreacion: new Date(),
+    };
+
+    turnos.push(nuevoTurno);
+
+    // 📱 Enviar confirmación por WhatsApp
+    const mensajeConfirmacion = `
+✂️ *BARBERÍA ELITE* ✂️
+
+¡Hola ${cliente}! Tu turno ha sido confirmado.
+
+📅 Fecha: ${fecha.toUpperCase()}
+🕐 Hora: ${hora}
+💇 Servicio: ${servicio}
+
+Te recordaremos 1 hora antes del turno.
+¡Gracias por confiar en nosotros!
+    `.trim();
+
+    await enviarWhatsApp(telefono, mensajeConfirmacion);
+
+    res.json({ 
+      success: true, 
+      turno: nuevoTurno,
+      mensaje: 'Turno agendado y confirmación enviada a WhatsApp'
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2️⃣ OBTENER TODOS LOS TURNOS
+app.get('/api/turnos', (req, res) => {
+  res.json(turnos);
+});
+
+// 3️⃣ OBTENER DISPONIBILIDAD
+app.get('/api/disponibilidad', (req, res) => {
+  res.json(disponibilidad);
+});
+
+// 4️⃣ ACTUALIZAR DISPONIBILIDAD (solo barbero)
+app.put('/api/disponibilidad/:dia', (req, res) => {
+  try {
+    const { dia } = req.params;
+    const { habilitado, horasDisponibles } = req.body;
+
+    if (!disponibilidad[dia]) {
+      return res.status(404).json({ error: 'Día no válido' });
+    }
+
+    disponibilidad[dia] = {
+      habilitado,
+      horasDisponibles: horasDisponibles || []
+    };
+
+    res.json({ success: true, disponibilidad: disponibilidad[dia] });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5️⃣ CAMBIAR ESTADO DE TURNO
+app.put('/api/turnos/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    const turno = turnos.find(t => t.id == id);
+    if (!turno) {
+      return res.status(404).json({ error: 'Turno no encontrado' });
+    }
+
+    turno.estado = estado;
+
+    if (estado === 'cancelado') {
+      // 📱 Enviar cancelación por WhatsApp
+      const mensaje = `
+❌ Tu turno del ${turno.fecha} a las ${turno.hora} ha sido cancelado.
+Puedes agendar otro en nuestra web.
+      `.trim();
+      enviarWhatsApp(turno.telefono, mensaje);
+    }
+
+    res.json({ success: true, turno });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =========================================
+// TAREAS AUTOMÁTICAS (CRON JOBS)
+// =========================================
+
+// ⏰ Recordatorio 1 hora antes del turno
+// Ejecuta cada 5 minutos para verificar
+cron.schedule('*/5 * * * *', async () => {
+  console.log('🔔 Verificando recordatorios...');
+
+  const ahora = new Date();
+  const dia = obtenerDiaActual();
+  const horaActual = obtenerHoraActual();
+
+  turnos.forEach(async (turno) => {
+    if (turno.estado !== 'confirmado') return;
+    if (turno.fecha !== dia) return;
+
+    // Calcular diferencia de minutos
+    const [horaT, minT] = turno.hora.split(':').map(Number);
+    const [horaA, minA] = horaActual.split(':').map(Number);
+
+    const minutosHasta = (horaT * 60 + minT) - (horaA * 60 + minA);
+
+    // Si faltan exactamente 60 minutos (±2)
+    if (minutosHasta <= 62 && minutosHasta >= 58 && !turno.recordatorioEnviado) {
+      const mensajeRecordatorio = `
+🔔 *RECORDATORIO: Tu turno es en 1 HORA*
+
+Nos vemos en 1 hora en Barbería Elite
+📅 ${turno.fecha.toUpperCase()}
+🕐 ${turno.hora}
+
+¡No llegues tarde! ✂️
+      `.trim();
+
+      await enviarWhatsApp(turno.telefono, mensajeRecordatorio);
+      turno.recordatorioEnviado = true;
+      console.log(`✓ Recordatorio enviado a ${turno.cliente}`);
+    }
+  });
+});
+
+// =========================================
+// FUNCIONES AUXILIARES
+// =========================================
+
+function obtenerDiaActual() {
+  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const hoy = new Date();
+  return dias[hoy.getDay()];
+}
+
+function obtenerHoraActual() {
+  const ahora = new Date();
+  const horas = String(ahora.getHours()).padStart(2, '0');
+  const minutos = String(ahora.getMinutes()).padStart(2, '0');
+  return `${horas}:${minutos}`;
+}
+
+// =========================================
+// EXPORTAR PARA HOJA DE CÁLCULO (Google Sheets)
+// =========================================
+
+app.get('/api/exportar-turnos', (req, res) => {
+  // Formato CSV para importar en Excel/Google Sheets
+  const csv = [
+    'ID,Cliente,Teléfono,Fecha,Hora,Servicio,Estado,Fecha Creación',
+    ...turnos.map(t => 
+      `${t.id},"${t.cliente}","${t.telefono}","${t.fecha}","${t.hora}","${t.servicio}","${t.estado}","${t.fechaCreacion}"`
+    )
+  ].join('\n');
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="turnos.csv"');
+  res.send(csv);
+});
+
+// =========================================
+// INTEGRACIÓN CON GOOGLE SHEETS (ALTERNATIVA)
+// =========================================
+
+// Si quieres enviar a Google Sheets automáticamente:
+async function guardarEnGoogleSheets(turno) {
+  try {
+    // Necesitas una App Script en Google Sheets
+    await axios.post(process.env.GOOGLE_SHEETS_WEBHOOK, {
+      cliente: turno.cliente,
+      telefono: turno.telefono,
+      fecha: turno.fecha,
+      hora: turno.hora,
+      servicio: turno.servicio,
+      estado: turno.estado
+    });
+    console.log('✓ Turno guardado en Google Sheets');
+  } catch (error) {
+    console.error('❌ Error al guardar en Sheets:', error.message);
+  }
+}
+
+// =========================================
+// INICIAR SERVIDOR
+// =========================================
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`
+╔════════════════════════════════════════╗
+║   🏋️ BARBERÍA ELITE - BACKEND         ║
+║   Servidor ejecutándose en puerto ${PORT}  ║
+╚════════════════════════════════════════╝
+
+📍 API disponible en:
+   POST   /api/turnos          → Crear turno
+   GET    /api/turnos          → Ver turnos
+   GET    /api/disponibilidad  → Ver disponibilidad
+   PUT    /api/disponibilidad/:dia → Actualizar disponibilidad
+   GET    /api/exportar-turnos → Descargar CSV
+  `);
+});
+
+module.exports = app

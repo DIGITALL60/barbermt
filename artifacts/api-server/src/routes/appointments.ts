@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, appointmentsTable, barbersTable, servicesTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import {
   ListAppointmentsQueryParams,
   CreateAppointmentBody,
@@ -240,6 +240,60 @@ router.delete("/:id", async (req, res) => {
   }
   await db.delete(appointmentsTable).where(eq(appointmentsTable.id, params.data.id));
   res.status(204).send();
+});
+
+// GET /appointments/export — descarga CSV con todos los turnos
+router.get("/export", async (_req, res) => {
+  const rows = await db
+    .select({
+      appointment: appointmentsTable,
+      barberName: barbersTable.name,
+      serviceName: servicesTable.name,
+      servicePrice: servicesTable.price,
+    })
+    .from(appointmentsTable)
+    .leftJoin(barbersTable, eq(appointmentsTable.barberId, barbersTable.id))
+    .leftJoin(servicesTable, eq(appointmentsTable.serviceId, servicesTable.id))
+    .orderBy(desc(appointmentsTable.date), appointmentsTable.timeSlot);
+
+  const escape = (v: unknown) => {
+    const s = String(v ?? "");
+    return s.includes(",") || s.includes('"') || s.includes("\n")
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    pending: "Pendiente",
+    confirmed: "Confirmado",
+    completed: "Completado",
+    cancelled: "Cancelado",
+  };
+
+  const lines = [
+    "ID,Cliente,Teléfono,Fecha,Hora,Servicio,Precio,Barbero,Estado,Creado",
+    ...rows.map((r) => {
+      const a = r.appointment;
+      const precio = r.servicePrice ? `$${parseFloat(r.servicePrice).toLocaleString("es-AR")}` : "";
+      return [
+        a.id,
+        escape(a.clientName),
+        escape(a.clientPhone),
+        a.date,
+        a.timeSlot,
+        escape(r.serviceName),
+        precio,
+        escape(r.barberName),
+        STATUS_LABELS[a.status] ?? a.status,
+        a.createdAt.toISOString(),
+      ].join(",");
+    }),
+  ].join("\n");
+
+  const date = new Date().toISOString().split("T")[0];
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="turnos-${date}.csv"`);
+  res.send("\uFEFF" + lines); // BOM para que Excel lo abra bien
 });
 
 export default router;
