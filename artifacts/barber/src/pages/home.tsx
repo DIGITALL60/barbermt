@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useListServices, useListBarbers, useGetAvailability, useCreateAppointment } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ function LogoMT({ className = "h-10 w-10" }: { className?: string }) {
 }
 
 export default function HomePage() {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [booking, setBooking] = useState<BookingState>({
     step: 0,
@@ -87,7 +89,14 @@ export default function HomePage() {
       <header className="py-4 px-6 border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <LogoMT className="h-9 w-9" />
+            <button
+              onClick={() => navigate("/admin")}
+              className="cursor-default focus:outline-none"
+              tabIndex={-1}
+              aria-hidden="true"
+            >
+              <LogoMT className="h-9 w-9" />
+            </button>
             <div>
               <span className="text-lg font-black uppercase tracking-wider text-foreground leading-none block">Barber M.T</span>
               <span className="text-[10px] text-muted-foreground tracking-widest uppercase">@mtbarbervm</span>
