@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useListServices, useListBarbers, useGetAvailability, useCreateAppointment } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,23 @@ export default function HomePage() {
 
   const { data: services, isLoading: isLoadingServices } = useListServices({ activeOnly: true });
   const { data: barbers, isLoading: isLoadingBarbers } = useListBarbers({ activeOnly: true });
+
+  const API_BASE = import.meta.env.VITE_API_URL || "";
+  const { data: schedule } = useQuery<{ dayOfWeek: number; enabled: boolean; startHour: number; endHour: number }[]>({
+    queryKey: ["schedule"],
+    queryFn: () => fetch(`${API_BASE}/api/schedule`).then(r => r.json()),
+    staleTime: 60_000,
+  });
+
+  const disabledDays = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return true;
+    if (!schedule) return date.getDay() === 0; // fallback: solo bloquea domingo
+    const dayConfig = schedule.find(s => s.dayOfWeek === date.getDay());
+    if (!dayConfig) return false;
+    return !dayConfig.enabled;
+  };
 
   const formattedDate = booking.date ? format(booking.date, "yyyy-MM-dd") : "";
   const { data: availability, isLoading: isLoadingAvailability } = useGetAvailability(
@@ -359,7 +377,7 @@ export default function HomePage() {
                       mode="single"
                       selected={booking.date}
                       onSelect={(d) => setBooking(prev => ({ ...prev, date: d, timeSlot: undefined }))}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || date.getDay() === 0}
+                      disabled={disabledDays}
                       locale={es}
                       className="rounded-md"
                     />
