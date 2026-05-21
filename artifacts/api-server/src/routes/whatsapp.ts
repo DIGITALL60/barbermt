@@ -64,7 +64,7 @@ async function handleMessage(phone: string, text: string): Promise<string> {
       .join("\n");
 
     conversations.set(phone, { step: "select_service" });
-    return `Hola! Bienvenido a *New King Barber*.\n\nElegí el servicio:\n${list}\n\nRespondé con el número del servicio.`;
+    return `Hola! Bienvenido a *Barber M.T* ✂️\n\nElegí el servicio:\n${list}\n\nRespondé con el número del servicio.`;
   }
 
   if (state.step === "select_service") {
@@ -202,7 +202,7 @@ async function handleMessage(phone: string, text: string): Promise<string> {
         status: "pending",
       });
       conversations.delete(phone);
-      return `Tu turno fue reservado con éxito!\n\nTe esperamos el *${state.date}* a las *${state.timeSlot}*.\n\nSi necesitás cancelar, respondé *CANCELAR*.\n\nNew King Barber`;
+      return `✅ *Tu turno está confirmado!*\n\nTe esperamos el *${state.date}* a las *${state.timeSlot}*.\n\nSi necesitás cancelar, respondé *CANCELAR*.\n\n✂️ Barber M.T`;
     } else if (msg === "no" || msg === "n") {
       conversations.delete(phone);
       return "Turno cancelado. Si querés sacar otro, mandá *hola*.";

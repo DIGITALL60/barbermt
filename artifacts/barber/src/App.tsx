@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,17 +11,36 @@ import BarbersPage from "@/pages/admin/barbers";
 import ServicesPage from "@/pages/admin/services";
 import SchedulePage from "@/pages/admin/schedule";
 
+import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
+import { AdminLogin } from "@/components/admin-login";
+
 const queryClient = new QueryClient();
+
+function AdminGuard({ component: Component }: { component: () => JSX.Element }) {
+  const { authed } = useAdminAuth();
+  if (!authed) return <AdminLogin />;
+  return <Component />;
+}
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
-      <Route path="/admin" component={DashboardPage} />
-      <Route path="/admin/appointments" component={AppointmentsPage} />
-      <Route path="/admin/barbers" component={BarbersPage} />
-      <Route path="/admin/services" component={ServicesPage} />
-      <Route path="/admin/schedule" component={SchedulePage} />
+      <Route path="/admin">
+        {() => <AdminGuard component={DashboardPage} />}
+      </Route>
+      <Route path="/admin/appointments">
+        {() => <AdminGuard component={AppointmentsPage} />}
+      </Route>
+      <Route path="/admin/barbers">
+        {() => <AdminGuard component={BarbersPage} />}
+      </Route>
+      <Route path="/admin/services">
+        {() => <AdminGuard component={ServicesPage} />}
+      </Route>
+      <Route path="/admin/schedule">
+        {() => <AdminGuard component={SchedulePage} />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -31,10 +50,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") || ""}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
+        <AdminAuthProvider>
+          <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") || ""}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </AdminAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

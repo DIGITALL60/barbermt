@@ -1,10 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, Users, Scissors, LayoutDashboard, ExternalLink, Activity, Clock } from "lucide-react";
+import { Calendar, Users, Scissors, LayoutDashboard, ExternalLink, Activity, Clock, LogOut } from "lucide-react";
 import { useHealthCheck } from "@workspace/api-client-react";
+import { useAdminAuth } from "@/lib/admin-auth";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: health } = useHealthCheck();
+  const { logout } = useAdminAuth();
 
   const navItems = [
     { href: "/admin", label: "Panel", icon: LayoutDashboard },
@@ -48,13 +50,20 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-border space-y-1">
           <Link href="/">
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer text-sm">
               <ExternalLink className="w-4 h-4 shrink-0" />
               Ver sitio público
             </div>
           </Link>
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer text-sm"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            Cerrar sesión
+          </button>
         </div>
       </aside>
 
