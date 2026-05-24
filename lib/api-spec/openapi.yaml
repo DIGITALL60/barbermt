@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Api
-  version: 0.1.0
-  description: New King Barber - API de turnos
+  title: BARBER M.T API
+  version: 1.0.0
+  description: BARBER M.T - API de turnos
 servers:
   - url: /api
     description: Base API path

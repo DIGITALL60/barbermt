@@ -23,7 +23,7 @@ router.get("/", async (req, res) => {
       id: s.id,
       name: s.name,
       description: s.description,
-      price: parseFloat(s.price),
+      price: s.price,
       durationMinutes: s.durationMinutes,
       active: s.active,
       createdAt: s.createdAt.toISOString(),
@@ -40,13 +40,13 @@ router.post("/", async (req, res) => {
   const { name, description, price, durationMinutes } = parsed.data;
   const [service] = await db
     .insert(servicesTable)
-    .values({ name, description, price: String(price), durationMinutes })
+    .values({ name, description, price, durationMinutes })
     .returning();
   res.status(201).json({
     id: service.id,
     name: service.name,
     description: service.description,
-    price: parseFloat(service.price),
+    price: service.price,
     durationMinutes: service.durationMinutes,
     active: service.active,
     createdAt: service.createdAt.toISOString(),
@@ -67,7 +67,7 @@ router.patch("/:id", async (req, res) => {
   const updates: Record<string, unknown> = {};
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
   if (parsed.data.description !== undefined) updates.description = parsed.data.description;
-  if (parsed.data.price !== undefined) updates.price = String(parsed.data.price);
+  if (parsed.data.price !== undefined) updates.price = parsed.data.price;
   if (parsed.data.durationMinutes !== undefined) updates.durationMinutes = parsed.data.durationMinutes;
   if (parsed.data.active !== undefined) updates.active = parsed.data.active;
 
@@ -85,7 +85,7 @@ router.patch("/:id", async (req, res) => {
     id: service.id,
     name: service.name,
     description: service.description,
-    price: parseFloat(service.price),
+    price: service.price,
     durationMinutes: service.durationMinutes,
     active: service.active,
     createdAt: service.createdAt.toISOString(),

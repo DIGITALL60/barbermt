@@ -56,7 +56,7 @@ router.get("/today", async (_req, res) => {
         r.appointment,
         r.barberName,
         r.serviceName,
-        r.servicePrice ? parseFloat(r.servicePrice) : null
+        r.servicePrice ?? null
       )
     )
   );
@@ -97,7 +97,7 @@ router.get("/", async (req, res) => {
         r.appointment,
         r.barberName,
         r.serviceName,
-        r.servicePrice ? parseFloat(r.servicePrice) : null
+        r.servicePrice ?? null
       )
     )
   );
@@ -136,12 +136,41 @@ router.post("/", async (req, res) => {
   const barber = await db.select().from(barbersTable).where(eq(barbersTable.id, barberId)).limit(1);
   const service = await db.select().from(servicesTable).where(eq(servicesTable.id, serviceId)).limit(1);
 
+  // Fire-and-forget: send WhatsApp confirmation via the bot server (port 3000)
+  if (clientPhone) {
+    const barberName = barber[0]?.name ?? "Tu barbero";
+    const serviceName = service[0]?.name ?? "Servicio";
+    const servicePrice = service[0]?.price ?? 0;
+    const confirmText =
+`✅ *TURNO CONFIRMADO - BARBER M.T*
+
+👤 Cliente: ${clientName}
+📅 Fecha: ${date}
+⏰ Hora: ${timeSlot}
+💈 Servicio: ${serviceName}
+👨‍💼 Barbero: ${barberName}
+💵 Precio: $${servicePrice.toLocaleString("es-AR")}
+
+Te esperamos. ¡Gracias por elegirnos! 💈`;
+
+    fetch("http://127.0.0.1:3000/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefono: clientPhone, mensaje: confirmText }),
+    }).then(async (response) => {
+      const result = await response.json();
+      console.log("[WhatsApp] Respuesta del bot:", result);
+    }).catch((err) => {
+      console.warn("[WhatsApp] No se pudo enviar la confirmación:", err.message);
+    });
+  }
+
   res.status(201).json(
     formatAppointment(
       appointment,
       barber[0]?.name,
       service[0]?.name,
-      service[0] ? parseFloat(service[0].price) : null
+      service[0]?.price ?? null
     )
   );
 });
@@ -175,7 +204,7 @@ router.get("/:id", async (req, res) => {
       r.appointment,
       r.barberName,
       r.serviceName,
-      r.servicePrice ? parseFloat(r.servicePrice) : null
+      r.servicePrice ?? null
     )
   );
 });
@@ -227,7 +256,7 @@ router.patch("/:id", async (req, res) => {
       r.appointment,
       r.barberName,
       r.serviceName,
-      r.servicePrice ? parseFloat(r.servicePrice) : null
+      r.servicePrice ?? null
     )
   );
 });
@@ -274,7 +303,7 @@ router.get("/export", async (_req, res) => {
     "ID,Cliente,Teléfono,Fecha,Hora,Servicio,Precio,Barbero,Estado,Creado",
     ...rows.map((r) => {
       const a = r.appointment;
-      const precio = r.servicePrice ? `$${parseFloat(r.servicePrice).toLocaleString("es-AR")}` : "";
+      const precio = r.servicePrice != null ? `$${r.servicePrice.toLocaleString("es-AR")}` : "";
       return [
         a.id,
         escape(a.clientName),

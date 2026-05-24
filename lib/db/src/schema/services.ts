@@ -1,15 +1,16 @@
-import { pgTable, serial, text, boolean, timestamp, numeric, integer } from "drizzle-orm/pg-core";
+import { sqliteTable, integer, text, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { sql } from "drizzle-orm";
 
-export const servicesTable = pgTable("services", {
-  id: serial("id").primaryKey(),
+export const servicesTable = sqliteTable("services", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   description: text("description"),
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  price: real("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull().default(30),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(strftime('%s', 'now'))`),
 });
 
 export const insertServiceSchema = createInsertSchema(servicesTable).omit({ id: true, createdAt: true });

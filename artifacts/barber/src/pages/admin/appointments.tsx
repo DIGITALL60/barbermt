@@ -6,7 +6,8 @@ import {
   useDeleteAppointment,
   useListBarbers,
   useGetAppointment,
-  getListAppointmentsQueryKey
+  getListAppointmentsQueryKey,
+  getGetAppointmentQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +37,7 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 function AppointmentDetailsDialog({ id, open, onOpenChange }: { id: number | null, open: boolean, onOpenChange: (o: boolean) => void }) {
-  const { data: apt, isLoading } = useGetAppointment(id || 0, { query: { enabled: !!id && open } });
+  const { data: apt, isLoading } = useGetAppointment(id || 0, { query: { enabled: !!id && open, queryKey: getGetAppointmentQueryKey(id || 0) } });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

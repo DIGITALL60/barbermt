@@ -1,3 +1,4 @@
+import React from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,13 +11,14 @@ import AppointmentsPage from "@/pages/admin/appointments";
 import BarbersPage from "@/pages/admin/barbers";
 import ServicesPage from "@/pages/admin/services";
 import SchedulePage from "@/pages/admin/schedule";
+import FinancesPage from "@/pages/admin/finances";
 
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import { AdminLogin } from "@/components/admin-login";
 
 const queryClient = new QueryClient();
 
-function AdminGuard({ component: Component }: { component: () => JSX.Element }) {
+function AdminGuard({ component: Component }: { component: React.ComponentType }) {
   const { authed } = useAdminAuth();
   if (!authed) return <AdminLogin />;
   return <Component />;
@@ -40,6 +42,9 @@ function Router() {
       </Route>
       <Route path="/admin/schedule">
         {() => <AdminGuard component={SchedulePage} />}
+      </Route>
+      <Route path="/admin/finances">
+        {() => <AdminGuard component={FinancesPage} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

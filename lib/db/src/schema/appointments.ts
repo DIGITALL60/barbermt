@@ -1,11 +1,12 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { barbersTable } from "./barbers";
 import { servicesTable } from "./services";
+import { sql } from "drizzle-orm";
 
-export const appointmentsTable = pgTable("appointments", {
-  id: serial("id").primaryKey(),
+export const appointmentsTable = sqliteTable("appointments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   barberId: integer("barber_id").notNull().references(() => barbersTable.id),
   serviceId: integer("service_id").notNull().references(() => servicesTable.id),
   clientName: text("client_name").notNull(),
@@ -14,7 +15,7 @@ export const appointmentsTable = pgTable("appointments", {
   timeSlot: text("time_slot").notNull(),
   status: text("status").notNull().default("pending"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(strftime('%s', 'now'))`),
 });
 
 export const insertAppointmentSchema = createInsertSchema(appointmentsTable).omit({ id: true, createdAt: true });

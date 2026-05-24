@@ -1490,3 +1490,98 @@ export const useReceiveWhatsappMessage = <TError = ErrorType<unknown>,
       return useMutation(getReceiveWhatsappMessageMutationOptions(options));
     }
 
+
+// ─── FINANCE ────────────────────────────────────────────────────────────────
+
+export interface FinanceChartMonth {
+  month: string;
+  revenue: number;
+  appointments: number;
+}
+
+export interface FinanceRevenueByEntity {
+  name: string;
+  total: number;
+  count: number;
+}
+
+export interface FinanceSummary {
+  selectedMonth: { year: number; month: number };
+  monthlyRevenue: number;
+  monthlyCompleted: number;
+  monthlyPending: number;
+  monthlyCancelled: number;
+  allTimeRevenue: number;
+  allTimeCompleted: number;
+  revenueByBarber: FinanceRevenueByEntity[];
+  revenueByService: FinanceRevenueByEntity[];
+  yearlyChart: FinanceChartMonth[];
+}
+
+export type GetFinanceSummaryParams = {
+  year?: number;
+  month?: number;
+};
+
+export const getFinanceSummaryUrl = (params?: GetFinanceSummaryParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, String(value));
+    }
+  });
+  const qs = normalizedParams.toString();
+  return qs.length > 0 ? `/api/finance/summary?${qs}` : `/api/finance/summary`;
+};
+
+export const getFinanceSummary = async (
+  params?: GetFinanceSummaryParams,
+  options?: RequestInit
+): Promise<FinanceSummary> => {
+  return customFetch<FinanceSummary>(getFinanceSummaryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFinanceSummaryQueryKey = (params?: GetFinanceSummaryParams) =>
+  [`/api/finance/summary`, ...(params ? [params] : [])] as const;
+
+export const getGetFinanceSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFinanceSummary>>,
+  TError = ErrorType<unknown>
+>(
+  params?: GetFinanceSummaryParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getFinanceSummary>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetFinanceSummaryQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getFinanceSummary>>> = ({ signal }) =>
+    getFinanceSummary(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFinanceSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFinanceSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getFinanceSummary>>>;
+export type GetFinanceSummaryQueryError = ErrorType<unknown>;
+
+export function useGetFinanceSummary<
+  TData = Awaited<ReturnType<typeof getFinanceSummary>>,
+  TError = ErrorType<unknown>
+>(
+  params?: GetFinanceSummaryParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getFinanceSummary>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFinanceSummaryQueryOptions(params, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}

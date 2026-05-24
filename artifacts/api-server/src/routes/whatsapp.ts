@@ -60,7 +60,7 @@ async function handleMessage(phone: string, text: string): Promise<string> {
     }
 
     const list = services
-      .map((s, i) => `${i + 1}. ${s.name} - $${parseFloat(s.price).toLocaleString("es-AR")} (${s.durationMinutes} min)`)
+      .map((s, i) => `${i + 1}. ${s.name} - $${s.price.toLocaleString("es-AR")} (${s.durationMinutes} min)`)
       .join("\n");
 
     conversations.set(phone, { step: "select_service" });
