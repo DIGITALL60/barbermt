@@ -9,16 +9,14 @@ const DEFAULT_INTERVAL = 30;
 
 function generateSlots(startHour: number, endHour: number, durationMinutes: number): string[] {
   const slots: string[] = [];
-  for (let hour = startHour; hour < endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += DEFAULT_INTERVAL) {
-      const slotStart = hour * 60 + minute;
-      const slotEnd = slotStart + durationMinutes;
-      if (slotEnd <= endHour * 60) {
-        const h = String(hour).padStart(2, "0");
-        const m = String(minute).padStart(2, "0");
-        slots.push(`${h}:${m}`);
-      }
-    }
+  let currentMinute = startHour * 60;
+  const endMinute = endHour * 60;
+
+  while (currentMinute + durationMinutes <= endMinute) {
+    const h = String(Math.floor(currentMinute / 60)).padStart(2, "0");
+    const m = String(currentMinute % 60).padStart(2, "0");
+    slots.push(`${h}:${m}`);
+    currentMinute += durationMinutes;
   }
   return slots;
 }

@@ -159,9 +159,23 @@ Te esperamos. ¡Gracias por elegirnos! 💈`;
       body: JSON.stringify({ telefono: clientPhone, mensaje: confirmText }),
     }).then(async (response) => {
       const result = await response.json();
-      console.log("[WhatsApp] Respuesta del bot:", result);
+      console.log("[WhatsApp] Respuesta del bot (Cliente):", result);
     }).catch((err) => {
-      console.warn("[WhatsApp] No se pudo enviar la confirmación:", err.message);
+      console.warn("[WhatsApp] No se pudo enviar la confirmación al cliente:", err.message);
+    });
+
+    const barberPhone = "5493534810359";
+    const barberText = `💈 NUEVO TURNO - BARBER M.T\n\n👤 Cliente: ${clientName} (${clientPhone})\n📅 Fecha: ${date}\n⏰ Hora: ${timeSlot}\n💈 Servicio: ${serviceName}`;
+
+    fetch("http://127.0.0.1:3000/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefono: barberPhone, mensaje: barberText }),
+    }).then(async (response) => {
+      const result = await response.json();
+      console.log("[WhatsApp] Respuesta del bot (Barbero):", result);
+    }).catch((err) => {
+      console.warn("[WhatsApp] No se pudo notificar al barbero:", err.message);
     });
   }
 
