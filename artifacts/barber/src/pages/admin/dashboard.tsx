@@ -1,5 +1,5 @@
 import { AdminLayout } from "@/components/layout/admin-layout";
-import { useGetDashboardSummary, useGetTodayAppointments } from "@workspace/api-client-react";
+import { useGetDashboardSummary, useGetTodayAppointments, useListAppointments } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, CheckCircle, DollarSign, Clock } from "lucide-react";
 
@@ -24,6 +24,12 @@ const STATUS_CLASSES: Record<string, string> = {
 export default function DashboardPage() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary();
   const { data: todayAppointments, isLoading: isLoadingToday } = useGetTodayAppointments();
+  const { data: allAppointments, isLoading: isLoadingAll } = useListAppointments({});
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const upcomingAppointments = allAppointments
+    ?.filter((apt) => apt.date > todayStr && apt.status !== "cancelled" && apt.status !== "completed")
+    .slice(0, 5) || [];
 
   return (
     <AdminLayout>
@@ -115,15 +121,15 @@ export default function DashboardPage() {
             <div className="space-y-3">
               {todayAppointments.map((apt) => (
                 <Card key={apt.id}>
-                  <CardContent className="flex items-center justify-between p-4">
+                  <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3">
                     <div className="flex items-center gap-4">
-                      <div className="text-lg font-bold text-primary w-16 shrink-0">{apt.timeSlot}</div>
+                      <div className="text-lg font-bold text-primary w-16 shrink-0 text-center">{apt.timeSlot}</div>
                       <div>
-                        <div className="font-semibold">{apt.clientName}</div>
-                        <div className="text-sm text-muted-foreground">{apt.serviceName} · {apt.barberName}</div>
+                        <div className="font-semibold line-clamp-1">{apt.clientName}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-1">{apt.serviceName} · {apt.barberName}</div>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider font-semibold ${STATUS_CLASSES[apt.status] ?? "bg-muted text-muted-foreground"}`}>
+                    <span className={`self-start sm:self-auto px-3 py-1 rounded-full text-xs uppercase tracking-wider font-semibold shrink-0 ${STATUS_CLASSES[apt.status] ?? "bg-muted text-muted-foreground"}`}>
                       {STATUS_LABELS[apt.status] ?? apt.status}
                     </span>
                   </CardContent>
@@ -134,6 +140,50 @@ export default function DashboardPage() {
             <Card>
               <CardContent className="p-10 text-center text-muted-foreground">
                 No hay turnos agendados para hoy.
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Próximos Turnos */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Próximos turnos</h2>
+          {isLoadingAll ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-16 bg-muted/50 rounded-md animate-pulse" />
+              ))}
+            </div>
+          ) : upcomingAppointments.length ? (
+            <div className="space-y-3">
+              {upcomingAppointments.map((apt) => {
+                const dateParts = apt.date.split("-");
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : apt.date;
+                return (
+                  <Card key={apt.id}>
+                    <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center w-16 shrink-0">
+                          <div className="text-sm font-semibold text-muted-foreground">{formattedDate}</div>
+                          <div className="text-lg font-bold text-primary">{apt.timeSlot}</div>
+                        </div>
+                        <div>
+                          <div className="font-semibold line-clamp-1">{apt.clientName}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-1">{apt.serviceName} · {apt.barberName}</div>
+                        </div>
+                      </div>
+                      <span className={`self-start sm:self-auto px-3 py-1 rounded-full text-xs uppercase tracking-wider font-semibold shrink-0 ${STATUS_CLASSES[apt.status] ?? "bg-muted text-muted-foreground"}`}>
+                        {STATUS_LABELS[apt.status] ?? apt.status}
+                      </span>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-10 text-center text-muted-foreground">
+                No hay próximos turnos agendados.
               </CardContent>
             </Card>
           )}

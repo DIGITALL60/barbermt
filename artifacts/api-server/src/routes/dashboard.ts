@@ -13,25 +13,25 @@ router.get("/summary", async (_req, res) => {
   const [todayResult, weekResult, statusResult, revenueResult, topServiceResult, topBarberResult] =
     await Promise.all([
       db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: sql<number>`count(*)` })
         .from(appointmentsTable)
         .where(and(eq(appointmentsTable.date, today), sql`${appointmentsTable.status} != 'cancelled'`)),
 
       db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: sql<number>`count(*)` })
         .from(appointmentsTable)
         .where(and(gte(appointmentsTable.date, weekStart), sql`${appointmentsTable.status} != 'cancelled'`)),
 
       db
         .select({
           status: appointmentsTable.status,
-          count: sql<number>`count(*)::int`,
+          count: sql<number>`count(*)`,
         })
         .from(appointmentsTable)
         .groupBy(appointmentsTable.status),
 
       db
-        .select({ total: sql<number>`coalesce(sum(${servicesTable.price}::numeric), 0)::float` })
+        .select({ total: sql<number>`coalesce(sum(${servicesTable.price}), 0)` })
         .from(appointmentsTable)
         .leftJoin(servicesTable, eq(appointmentsTable.serviceId, servicesTable.id))
         .where(eq(appointmentsTable.status, "completed")),
@@ -39,7 +39,7 @@ router.get("/summary", async (_req, res) => {
       db
         .select({
           name: servicesTable.name,
-          count: sql<number>`count(*)::int`,
+          count: sql<number>`count(*)`,
         })
         .from(appointmentsTable)
         .leftJoin(servicesTable, eq(appointmentsTable.serviceId, servicesTable.id))
@@ -51,7 +51,7 @@ router.get("/summary", async (_req, res) => {
       db
         .select({
           name: barbersTable.name,
-          count: sql<number>`count(*)::int`,
+          count: sql<number>`count(*)`,
         })
         .from(appointmentsTable)
         .leftJoin(barbersTable, eq(appointmentsTable.barberId, barbersTable.id))
