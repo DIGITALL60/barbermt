@@ -147,7 +147,8 @@ export default function SchedulePage() {
           <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
           <p className="text-sm text-muted-foreground leading-relaxed">
             Los cambios se aplican de inmediato. Los días desactivados no
-            aparecen en el calendario de reservas.
+            aparecen en el calendario de reservas.<br />
+            <strong>Último turno</strong>: indica la hora a la que comienza el último turno del día.
           </p>
         </div>
 
@@ -204,7 +205,7 @@ export default function SchedulePage() {
                   {day.enabled && (
                     <div className="flex items-end gap-3 px-4 pb-4">
                       <TimeSelect
-                        label="Abre"
+                        label="Primer turno"
                         value={day.startTime}
                         onChange={(v) => updateDay(d.dow, { startTime: v })}
                       />
@@ -212,7 +213,7 @@ export default function SchedulePage() {
                         →
                       </div>
                       <TimeSelect
-                        label="Cierra"
+                        label="Último turno"
                         value={day.endTime}
                         onChange={(v) => updateDay(d.dow, { endTime: v })}
                       />

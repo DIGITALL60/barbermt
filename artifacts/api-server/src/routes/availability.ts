@@ -13,9 +13,10 @@ function generateSlots(startTime: string, endTime: string, durationMinutes: numb
   let currentMinute = sh * 60 + (sm || 0);
   
   const [eh, em] = endTime.split(":").map(Number);
+  // endMinute es la hora hasta la que se PUEDE INICIAR un turno (inclusive)
   const endMinute = eh * 60 + (em || 0);
 
-  while (currentMinute + durationMinutes <= endMinute) {
+  while (currentMinute <= endMinute) {
     const h = String(Math.floor(currentMinute / 60)).padStart(2, "0");
     const m = String(currentMinute % 60).padStart(2, "0");
     slots.push(`${h}:${m}`);
