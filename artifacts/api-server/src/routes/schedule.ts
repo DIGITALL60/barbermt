@@ -18,16 +18,16 @@ router.put("/:dayOfWeek", async (req, res) => {
     return;
   }
 
-  const { enabled, startHour, endHour } = req.body as {
+  const { enabled, startTime, endTime } = req.body as {
     enabled?: boolean;
-    startHour?: number;
-    endHour?: number;
+    startTime?: string;
+    endTime?: string;
   };
 
   if (
     (enabled !== undefined && typeof enabled !== "boolean") ||
-    (startHour !== undefined && (typeof startHour !== "number" || startHour < 0 || startHour > 23)) ||
-    (endHour !== undefined && (typeof endHour !== "number" || endHour < 1 || endHour > 24))
+    (startTime !== undefined && typeof startTime !== "string") ||
+    (endTime !== undefined && typeof endTime !== "string")
   ) {
     res.status(400).json({ error: "Datos inválidos" });
     return;
@@ -39,15 +39,15 @@ router.put("/:dayOfWeek", async (req, res) => {
     const [row] = await db.insert(scheduleTable).values({
       dayOfWeek,
       enabled: enabled ?? true,
-      startHour: startHour ?? 9,
-      endHour: endHour ?? 20,
+      startTime: startTime ?? "09:00",
+      endTime: endTime ?? "20:00",
     }).returning();
     res.json(row);
   } else {
     const updates: Record<string, unknown> = {};
     if (enabled !== undefined) updates.enabled = enabled;
-    if (startHour !== undefined) updates.startHour = startHour;
-    if (endHour !== undefined) updates.endHour = endHour;
+    if (startTime !== undefined) updates.startTime = startTime;
+    if (endTime !== undefined) updates.endTime = endTime;
 
     const [row] = await db.update(scheduleTable).set(updates).where(eq(scheduleTable.dayOfWeek, dayOfWeek)).returning();
     res.json(row);

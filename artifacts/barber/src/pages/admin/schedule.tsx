@@ -17,22 +17,26 @@ const DAYS = [
   { dow: 6, label: "Sábado", short: "Sáb" },
 ];
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const TIMES = Array.from({ length: 48 }, (_, i) => {
+  const h = String(Math.floor(i / 2)).padStart(2, "0");
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${h}:${m}`;
+});
 
 type DaySchedule = {
   dayOfWeek: number;
   enabled: boolean;
-  startHour: number;
-  endHour: number;
+  startTime: string;
+  endTime: string;
 };
 
-function HourSelect({
+function TimeSelect({
   value,
   onChange,
   label,
 }: {
-  value: number;
-  onChange: (v: number) => void;
+  value: string;
+  onChange: (v: string) => void;
   label: string;
 }) {
   return (
@@ -42,12 +46,12 @@ function HourSelect({
       </label>
       <select
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full bg-background border border-border text-foreground rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary appearance-none text-center"
       >
-        {HOURS.map((h) => (
-          <option key={h} value={h}>
-            {String(h).padStart(2, "0")}:00
+        {TIMES.map((t) => (
+          <option key={t} value={t}>
+            {t}
           </option>
         ))}
       </select>
@@ -76,8 +80,8 @@ export default function SchedulePage() {
           found ?? {
             dayOfWeek: d.dow,
             enabled: d.dow !== 0,
-            startHour: 9,
-            endHour: 20,
+            startTime: "09:00",
+            endTime: "20:00",
           }
         );
       });
@@ -98,7 +102,7 @@ export default function SchedulePage() {
   async function saveDay(dayOfWeek: number) {
     const day = schedule.find((d) => d.dayOfWeek === dayOfWeek);
     if (!day) return;
-    if (day.enabled && day.startHour >= day.endHour) {
+    if (day.enabled && day.startTime >= day.endTime) {
       toast({
         title: "El horario de apertura debe ser anterior al de cierre",
         variant: "destructive",
@@ -112,8 +116,8 @@ export default function SchedulePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           enabled: day.enabled,
-          startHour: day.startHour,
-          endHour: day.endHour,
+          startTime: day.startTime,
+          endTime: day.endTime,
         }),
       });
       if (!res.ok) throw new Error();
@@ -199,18 +203,18 @@ export default function SchedulePage() {
                   {/* Fila horarios — solo si está habilitado */}
                   {day.enabled && (
                     <div className="flex items-end gap-3 px-4 pb-4">
-                      <HourSelect
+                      <TimeSelect
                         label="Abre"
-                        value={day.startHour}
-                        onChange={(v) => updateDay(d.dow, { startHour: v })}
+                        value={day.startTime}
+                        onChange={(v) => updateDay(d.dow, { startTime: v })}
                       />
                       <div className="pb-2.5 text-muted-foreground font-bold text-lg">
                         →
                       </div>
-                      <HourSelect
+                      <TimeSelect
                         label="Cierra"
-                        value={day.endHour}
-                        onChange={(v) => updateDay(d.dow, { endHour: v })}
+                        value={day.endTime}
+                        onChange={(v) => updateDay(d.dow, { endTime: v })}
                       />
                     </div>
                   )}

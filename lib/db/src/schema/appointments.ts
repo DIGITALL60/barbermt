@@ -14,6 +14,7 @@ export const appointmentsTable = sqliteTable("appointments", {
   date: text("date").notNull(),
   timeSlot: text("time_slot").notNull(),
   status: text("status").notNull().default("pending"),
+  reminderSent: integer("reminder_sent", { mode: "boolean" }).notNull().default(false),
   notes: text("notes"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(strftime('%s', 'now'))`),
 });

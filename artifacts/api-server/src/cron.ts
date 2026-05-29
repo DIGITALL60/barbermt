@@ -60,7 +60,6 @@ export function startCronJobs(): void {
           date: appointmentsTable.date,
           serviceName: servicesTable.name,
           barberName: barbersTable.name,
-          reminderSent: sql<boolean>`${appointmentsTable.status} = 'reminder_sent'`,
         })
         .from(appointmentsTable)
         .leftJoin(barbersTable, eq(appointmentsTable.barberId, barbersTable.id))
@@ -68,6 +67,7 @@ export function startCronJobs(): void {
         .where(
           and(
             eq(appointmentsTable.date, today),
+            eq(appointmentsTable.reminderSent, false),
             sql`${appointmentsTable.status} = 'confirmed'`
           )
         );
@@ -75,17 +75,21 @@ export function startCronJobs(): void {
       for (const apt of appointments) {
         const aptMinutes = toMinutes(apt.timeSlot);
         const diff = aptMinutes - currentMinutes;
-        // Enviar si faltan entre 58 y 62 minutos
-        if (diff >= 58 && diff <= 62) {
+        // Enviar si faltan entre 0 y 65 minutos (cubriendo 1 hora, asegurando envío)
+        if (diff > 0 && diff <= 65) {
           const message =
             `✂️ *Barber M.T* — Recordatorio\n\n` +
-            `Hola ${apt.clientName.split(" ")[0]}! Tu turno es en *1 hora*.\n\n` +
+            `Hola ${apt.clientName.split(" ")[0]}! Tu turno es en aprox 1 hora.\n\n` +
             `📅 Hoy a las *${apt.timeSlot}*\n` +
             `💈 Servicio: ${apt.serviceName ?? "Turno"}\n\n` +
             `¡Te esperamos! Para cancelar escribinos.`;
 
           await sendWhatsApp(apt.clientPhone, message);
           console.log(`[Cron] Recordatorio enviado → ${apt.clientName} (${apt.timeSlot})`);
+          
+          await db.update(appointmentsTable)
+            .set({ reminderSent: true })
+            .where(eq(appointmentsTable.id, apt.id));
         }
       }
     } catch (e) {

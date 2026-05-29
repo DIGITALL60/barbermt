@@ -7,10 +7,13 @@ const router = Router();
 
 const DEFAULT_INTERVAL = 30;
 
-function generateSlots(startHour: number, endHour: number, durationMinutes: number): string[] {
+function generateSlots(startTime: string, endTime: string, durationMinutes: number): string[] {
   const slots: string[] = [];
-  let currentMinute = startHour * 60;
-  const endMinute = endHour * 60;
+  const [sh, sm] = startTime.split(":").map(Number);
+  let currentMinute = sh * 60 + (sm || 0);
+  
+  const [eh, em] = endTime.split(":").map(Number);
+  const endMinute = eh * 60 + (em || 0);
 
   while (currentMinute + durationMinutes <= endMinute) {
     const h = String(Math.floor(currentMinute / 60)).padStart(2, "0");
@@ -63,8 +66,8 @@ router.get("/", async (req, res) => {
     return;
   }
 
-  const startHour = scheduleRows[0]?.startHour ?? 9;
-  const endHour = scheduleRows[0]?.endHour ?? 20;
+  const startTime = scheduleRows[0]?.startTime ?? "09:00";
+  const endTime = scheduleRows[0]?.endTime ?? "20:00";
 
   let durationMinutes = DEFAULT_INTERVAL;
   if (serviceId) {
@@ -93,7 +96,7 @@ router.get("/", async (req, res) => {
       )
     );
 
-  const allSlots = generateSlots(startHour, endHour, durationMinutes);
+  const allSlots = generateSlots(startTime, endTime, durationMinutes);
 
   const slots = allSlots.map((time) => {
     const hasConflict = booked.some((b) =>
