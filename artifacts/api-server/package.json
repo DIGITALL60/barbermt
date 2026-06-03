@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@libsql/linux-x64-gnu": "^0.14.0",
+    "@libsql/linux-x64-gnu": "^0.4.7",
     "@types/node-cron": "^3.0.11",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
