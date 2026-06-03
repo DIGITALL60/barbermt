@@ -32,7 +32,7 @@ const {
 // 1. CONFIGURATION & DIRECTORY SETUP
 // ==========================================
 const PORT = process.env.PORT || 3000;
-const API_BASE = 'http://127.0.0.1:5000/api';
+const API_BASE = process.env.API_BASE || 'http://127.0.0.1:5000/api';
 
 const DATA_DIR = path.join(__dirname, 'data');
 const AUTH_DIR = path.join(__dirname, 'auth_info_baileys');

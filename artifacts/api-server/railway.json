@@ -1,9 +1,9 @@
 {
-  "$schema": "https://railway.com/railway.schema.json",
-  "build": {
-    "buildCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server build"
-  },
-  "deploy": {
-    "startCommand": "pnpm --filter @workspace/api-server start"
-  }
+    "$schema": "https://railway.com/railway.schema.json",
+    "build": {
+        "buildCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm approve-builds --yes && pnpm --filter @workspace/api-server build"
+    },
+    "deploy": {
+        "startCommand": "node --enable-source-maps artifacts/api-server/dist/index.mjs"
+    }
 }

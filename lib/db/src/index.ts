@@ -1,9 +1,14 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient } from "@libsql/client";
-import path from "path";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
-const sqlite = createClient({ url: "file:" + path.join(__dirname, "../../../sqlite.db").replace(/\\/g, "/") });
-export const db = drizzle(sqlite, { schema });
+const dbUrl = process.env.DATABASE_URL;
+
+if (!dbUrl) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
+
+const queryClient = postgres(dbUrl, { prepare: false });
+export const db = drizzle(queryClient, { schema });
 
 export * from "./schema";
