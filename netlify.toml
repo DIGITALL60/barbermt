@@ -1,4 +1,3 @@
 [build]
-  base = "artifacts/barber"
-  command = "pnpm run build"
-  publish = "dist"
+  command = "pnpm install && pnpm run build"
+  publish = "artifacts/barber/dist"
