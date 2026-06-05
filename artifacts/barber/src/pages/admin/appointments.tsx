@@ -22,6 +22,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+// Normaliza cualquier respuesta de la API a un array
+function toArray<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  for (const key of ["data", "items", "appointments", "barbers", "results"]) {
+    if (Array.isArray(obj[key])) return obj[key] as T[];
+  }
+  return [];
+}
+
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
   confirmed: "Confirmado",
@@ -37,7 +48,8 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 function AppointmentDetailsDialog({ id, open, onOpenChange }: { id: number | null, open: boolean, onOpenChange: (o: boolean) => void }) {
-  const { data: apt, isLoading } = useGetAppointment(id || 0, { query: { enabled: !!id && open, queryKey: getGetAppointmentQueryKey(id || 0) } });
+  const { data: aptRaw, isLoading } = useGetAppointment(id || 0, { query: { enabled: !!id && open, queryKey: getGetAppointmentQueryKey(id || 0) } });
+  const apt = aptRaw ? (((aptRaw as any)?.data && !Array.isArray((aptRaw as any).data)) ? (aptRaw as any).data : aptRaw) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,36 +64,36 @@ function AppointmentDetailsDialog({ id, open, onOpenChange }: { id: number | nul
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Cliente</p>
-                <p className="font-semibold">{apt.clientName}</p>
-                <p className="text-sm text-muted-foreground">{apt.clientPhone}</p>
+                <p className="font-semibold">{(apt as any).clientName}</p>
+                <p className="text-sm text-muted-foreground">{(apt as any).clientPhone}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estado</p>
-                <Badge variant="outline" className={`mt-1 ${STATUS_CLASSES[apt.status] ?? ""}`}>
-                  {STATUS_LABELS[apt.status] ?? apt.status}
+                <Badge variant="outline" className={`mt-1 ${STATUS_CLASSES[(apt as any).status] ?? ""}`}>
+                  {STATUS_LABELS[(apt as any).status] ?? (apt as any).status}
                 </Badge>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Servicio</p>
-                <p className="font-semibold">{apt.serviceName}</p>
-                {apt.servicePrice != null && (
-                  <p className="text-sm text-muted-foreground">${apt.servicePrice.toLocaleString("es-AR")}</p>
+                <p className="font-semibold">{(apt as any).serviceName}</p>
+                {(apt as any).servicePrice != null && (
+                  <p className="text-sm text-muted-foreground">${Number((apt as any).servicePrice ?? 0).toLocaleString("es-AR")}</p>
                 )}
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Barbero</p>
-                <p className="font-semibold">{apt.barberName}</p>
+                <p className="font-semibold">{(apt as any).barberName}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Fecha y hora</p>
-                <p className="font-semibold capitalize">{apt.date && format(new Date(apt.date + "T00:00:00"), "d 'de' MMMM yyyy", { locale: es })}</p>
-                <p className="text-sm text-muted-foreground">{apt.timeSlot}</p>
+                <p className="font-semibold capitalize">{(apt as any).date && format(new Date((apt as any).date + "T00:00:00"), "d 'de' MMMM yyyy", { locale: es })}</p>
+                <p className="text-sm text-muted-foreground">{(apt as any).timeSlot}</p>
               </div>
             </div>
-            {apt.notes && (
+            {(apt as any).notes && (
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Notas</p>
-                <p className="text-sm italic text-muted-foreground">"{apt.notes}"</p>
+                <p className="text-sm italic text-muted-foreground">"{(apt as any).notes}"</p>
               </div>
             )}
           </div>
@@ -108,15 +120,17 @@ export default function AppointmentsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: barbers } = useListBarbers();
+  const { data: barbersRaw } = useListBarbers();
+  const barbers = toArray<any>(barbersRaw);
 
   const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
 
-  const { data: appointments, isLoading } = useListAppointments({
+  const { data: appointmentsRaw, isLoading } = useListAppointments({
     date: formattedDate,
     barberId: barberId !== "all" ? parseInt(barberId) : undefined,
     status: status !== "all" ? status : undefined
   });
+  const appointments = toArray<any>(appointmentsRaw);
 
   const updateStatus = useUpdateAppointment({
     mutation: {
@@ -190,7 +204,7 @@ export default function AppointmentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {barbers?.map(b => (
+                  {barbers.map(b => (
                     <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -227,7 +241,7 @@ export default function AppointmentsPage() {
           <div className="flex justify-center p-8">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : appointments?.length ? (
+        ) : appointments.length ? (
           <div className="space-y-3">
             {appointments.map(apt => (
               <Card key={apt.id}>
@@ -305,5 +319,7 @@ export default function AppointmentsPage() {
         )}
       </div>
     </AdminLayout>
+  );
+}
   );
 }
