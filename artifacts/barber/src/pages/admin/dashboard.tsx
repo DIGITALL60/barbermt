@@ -7,6 +7,17 @@ function formatPrice(n: number) {
   return `$${n.toLocaleString("es-AR")}`;
 }
 
+// Normaliza cualquier respuesta de la API a un array
+function toArray<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  for (const key of ["data", "items", "appointments", "results"]) {
+    if (Array.isArray(obj[key])) return obj[key] as T[];
+  }
+  return [];
+}
+
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
   confirmed: "Confirmado",
@@ -23,13 +34,16 @@ const STATUS_CLASSES: Record<string, string> = {
 
 export default function DashboardPage() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary();
-  const { data: todayAppointments, isLoading: isLoadingToday } = useGetTodayAppointments();
-  const { data: allAppointments, isLoading: isLoadingAll } = useListAppointments({});
+  const { data: todayAppointmentsRaw, isLoading: isLoadingToday } = useGetTodayAppointments();
+  const { data: allAppointmentsRaw, isLoading: isLoadingAll } = useListAppointments({});
+
+  const todayAppointments = toArray<any>(todayAppointmentsRaw);
+  const allAppointments = toArray<any>(allAppointmentsRaw);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const upcomingAppointments = allAppointments
-    ?.filter((apt) => apt.date > todayStr && apt.status !== "cancelled" && apt.status !== "completed")
-    .slice(0, 5) || [];
+    .filter((apt) => apt.date > todayStr && apt.status !== "cancelled" && apt.status !== "completed")
+    .slice(0, 5);
 
   return (
     <AdminLayout>
@@ -55,7 +69,7 @@ export default function DashboardPage() {
                 <Calendar className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{summary.todayCount}</div>
+                <div className="text-3xl font-bold">{(summary as any).todayCount}</div>
               </CardContent>
             </Card>
             <Card>
@@ -64,7 +78,7 @@ export default function DashboardPage() {
                 <Clock className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{summary.pendingCount}</div>
+                <div className="text-3xl font-bold">{(summary as any).pendingCount}</div>
               </CardContent>
             </Card>
             <Card>
@@ -73,7 +87,7 @@ export default function DashboardPage() {
                 <CheckCircle className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{summary.weekCount}</div>
+                <div className="text-3xl font-bold">{(summary as any).weekCount}</div>
               </CardContent>
             </Card>
             <Card>
@@ -82,27 +96,27 @@ export default function DashboardPage() {
                 <DollarSign className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{formatPrice(summary.totalRevenue)}</div>
+                <div className="text-3xl font-bold">{formatPrice((summary as any).totalRevenue)}</div>
               </CardContent>
             </Card>
           </div>
         ) : null}
 
-        {(summary?.topBarber || summary?.topService) && (
+        {((summary as any)?.topBarber || (summary as any)?.topService) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {summary.topBarber && (
+            {(summary as any).topBarber && (
               <Card>
                 <CardContent className="p-6">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Barbero más solicitado</p>
-                  <p className="text-xl font-bold text-primary">{summary.topBarber}</p>
+                  <p className="text-xl font-bold text-primary">{(summary as any).topBarber}</p>
                 </CardContent>
               </Card>
             )}
-            {summary.topService && (
+            {(summary as any).topService && (
               <Card>
                 <CardContent className="p-6">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Servicio más pedido</p>
-                  <p className="text-xl font-bold text-primary">{summary.topService}</p>
+                  <p className="text-xl font-bold text-primary">{(summary as any).topService}</p>
                 </CardContent>
               </Card>
             )}
@@ -117,7 +131,7 @@ export default function DashboardPage() {
                 <div key={i} className="h-16 bg-muted/50 rounded-md animate-pulse" />
               ))}
             </div>
-          ) : todayAppointments?.length ? (
+          ) : todayAppointments.length ? (
             <div className="space-y-3">
               {todayAppointments.map((apt) => (
                 <Card key={apt.id}>
@@ -145,7 +159,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Próximos Turnos */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Próximos turnos</h2>
           {isLoadingAll ? (
