@@ -28,6 +28,17 @@ function formatPrice(price: number | string) {
   return `$${Number(price).toLocaleString("es-AR")}`;
 }
 
+// Normaliza cualquier respuesta de la API a un array
+function toArray<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  for (const key of ["data", "items", "services", "barbers", "results"]) {
+    if (Array.isArray(obj[key])) return obj[key] as T[];
+  }
+  return [];
+}
+
 function LogoMT({ className = "h-10 w-10" }: { className?: string }) {
   return (
     <img src="/logo-mt.svg" alt="Barber M.T" className={className} />
@@ -44,13 +55,17 @@ export default function HomePage() {
     notes: ""
   });
 
-  const { data: services, isLoading: isLoadingServices } = useListServices({ activeOnly: true });
-  const { data: barbers, isLoading: isLoadingBarbers } = useListBarbers({ activeOnly: true });
+  const { data: servicesRaw, isLoading: isLoadingServices } = useListServices({ activeOnly: true });
+  const { data: barbersRaw, isLoading: isLoadingBarbers } = useListBarbers({ activeOnly: true });
+
+  // Siempre arrays, sin importar qué devuelva la API
+  const services = toArray<{ id: number; name: string; price: number | string; durationMinutes: number }>(servicesRaw);
+  const barbers = toArray<{ id: number; name: string; bio?: string; photoUrl?: string }>(barbersRaw);
 
   const API_BASE = import.meta.env.VITE_API_URL || "";
   const { data: schedule } = useQuery<{ dayOfWeek: number; enabled: boolean; startHour: number; endHour: number }[]>({
     queryKey: ["schedule"],
-    queryFn: () => fetch(`${API_BASE}/api/schedule`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryFn: () => fetch(`${API_BASE}/api/schedule`).then(r => r.json()).then(d => Array.isArray(d) ? d : (d?.data ?? [])),
   });
 
   const disabledDays = (date: Date) => {
@@ -58,7 +73,7 @@ export default function HomePage() {
     today.setHours(0, 0, 0, 0);
     if (date < today) return true;
     const dayConfig = schedule?.find(s => s.dayOfWeek === date.getDay());
-    if (!dayConfig) return date.getDay() === 0; // fallback: solo bloquea domingo
+    if (!dayConfig) return date.getDay() === 0;
     return !dayConfig.enabled;
   };
 
@@ -94,8 +109,8 @@ export default function HomePage() {
     });
   };
 
-  const selectedService = services?.find(s => s.id === booking.serviceId);
-  const selectedBarber = barbers?.find(b => b.id === booking.barberId);
+  const selectedService = services.find(s => s.id === booking.serviceId);
+  const selectedBarber = barbers.find(b => b.id === booking.barberId);
   const isInFlow = booking.step >= 1 && booking.step <= 4;
 
   return (
@@ -239,7 +254,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-                  {services?.map(service => (
+                  {services.map(service => (
                     <button
                       key={service.id}
                       onClick={() => setBooking(prev => ({ ...prev, serviceId: service.id, step: 2 }))}
@@ -302,7 +317,7 @@ export default function HomePage() {
                 <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               ) : (
                 <div className="grid gap-4">
-                  {services?.map(service => (
+                  {services.map(service => (
                     <button
                       key={service.id}
                       className={`text-left group relative overflow-hidden rounded-xl border transition-all duration-300
@@ -345,7 +360,7 @@ export default function HomePage() {
                 <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               ) : (
                 <div className="grid gap-4">
-                  {barbers?.map(barber => (
+                  {barbers.map(barber => (
                     <button
                       key={barber.id}
                       className={`text-left group relative overflow-hidden rounded-xl border transition-all duration-300
