@@ -12,6 +12,21 @@ import {
 
 const router = Router();
 
+const BOT_URL = (process.env.BOT_URL || "http://127.0.0.1:3000").replace(/\/+$/, "");
+
+function notifyWhatsApp(telefono: string, mensaje: string, label: string) {
+  fetch(`${BOT_URL}/api/notify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ telefono, mensaje }),
+  }).then(async (response) => {
+    const result = await response.json();
+    console.log(`[WhatsApp] ${label}:`, result);
+  }).catch((err) => {
+    console.warn(`[WhatsApp] No se pudo notificar (${label}):`, err.message);
+  });
+}
+
 function formatAppointment(
   a: typeof appointmentsTable.$inferSelect,
   barberName?: string | null,
@@ -50,16 +65,7 @@ router.get("/today", async (_req, res) => {
     .where(eq(appointmentsTable.date, today))
     .orderBy(appointmentsTable.timeSlot);
 
-  res.json(
-    rows.map((r) =>
-      formatAppointment(
-        r.appointment,
-        r.barberName,
-        r.serviceName,
-        r.servicePrice ?? null
-      )
-    )
-  );
+  res.json(rows.map((r) => formatAppointment(r.appointment, r.barberName, r.serviceName, r.servicePrice ?? null)));
 });
 
 router.get("/", async (req, res) => {
@@ -80,27 +86,12 @@ router.get("/", async (req, res) => {
   let results = rows;
 
   if (query.success) {
-    if (query.data.date) {
-      results = results.filter((r) => r.appointment.date === query.data.date);
-    }
-    if (query.data.barberId) {
-      results = results.filter((r) => r.appointment.barberId === query.data.barberId);
-    }
-    if (query.data.status) {
-      results = results.filter((r) => r.appointment.status === query.data.status);
-    }
+    if (query.data.date) results = results.filter((r) => r.appointment.date === query.data.date);
+    if (query.data.barberId) results = results.filter((r) => r.appointment.barberId === query.data.barberId);
+    if (query.data.status) results = results.filter((r) => r.appointment.status === query.data.status);
   }
 
-  res.json(
-    results.map((r) =>
-      formatAppointment(
-        r.appointment,
-        r.barberName,
-        r.serviceName,
-        r.servicePrice ?? null
-      )
-    )
-  );
+  res.json(results.map((r) => formatAppointment(r.appointment, r.barberName, r.serviceName, r.servicePrice ?? null)));
 });
 
 router.post("/", async (req, res) => {
@@ -136,12 +127,13 @@ router.post("/", async (req, res) => {
   const barber = await db.select().from(barbersTable).where(eq(barbersTable.id, barberId)).limit(1);
   const service = await db.select().from(servicesTable).where(eq(servicesTable.id, serviceId)).limit(1);
 
-  // Fire-and-forget: send WhatsApp confirmation via the bot server (port 3000)
   if (clientPhone) {
     const barberName = barber[0]?.name ?? "Tu barbero";
     const serviceName = service[0]?.name ?? "Servicio";
     const servicePrice = service[0]?.price ?? 0;
-    const confirmText =
+
+    // Notificar al cliente
+    notifyWhatsApp(clientPhone,
 `✅ *TURNO CONFIRMADO - BARBER M.T*
 
 👤 Cliente: ${clientName}
@@ -151,50 +143,25 @@ router.post("/", async (req, res) => {
 👨‍💼 Barbero: ${barberName}
 💵 Precio: $${servicePrice.toLocaleString("es-AR")}
 
-Te esperamos. ¡Gracias por elegirnos! 💈`;
+Te esperamos. ¡Gracias por elegirnos! 💈`,
+      "Cliente"
+    );
 
-    fetch("http://127.0.0.1:3000/api/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telefono: clientPhone, mensaje: confirmText }),
-    }).then(async (response) => {
-      const result = await response.json();
-      console.log("[WhatsApp] Respuesta del bot (Cliente):", result);
-    }).catch((err) => {
-      console.warn("[WhatsApp] No se pudo enviar la confirmación al cliente:", err.message);
-    });
-
-    const barberPhone = "5493534810359";
-    const barberText = `💈 NUEVO TURNO - BARBER M.T\n\n👤 Cliente: ${clientName} (${clientPhone})\n📅 Fecha: ${date}\n⏰ Hora: ${timeSlot}\n💈 Servicio: ${serviceName}`;
-
-    fetch("http://127.0.0.1:3000/api/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telefono: barberPhone, mensaje: barberText }),
-    }).then(async (response) => {
-      const result = await response.json();
-      console.log("[WhatsApp] Respuesta del bot (Barbero):", result);
-    }).catch((err) => {
-      console.warn("[WhatsApp] No se pudo notificar al barbero:", err.message);
-    });
+    // Notificar al barbero
+    notifyWhatsApp(
+      "5493534810359",
+      `💈 NUEVO TURNO - BARBER M.T\n\n👤 Cliente: ${clientName} (${clientPhone})\n📅 Fecha: ${date}\n⏰ Hora: ${timeSlot}\n💈 Servicio: ${serviceName}`,
+      "Barbero"
+    );
   }
 
-  res.status(201).json(
-    formatAppointment(
-      appointment,
-      barber[0]?.name,
-      service[0]?.name,
-      service[0]?.price ?? null
-    )
-  );
+  res.status(201).json(formatAppointment(appointment, barber[0]?.name, service[0]?.name, service[0]?.price ?? null));
 });
 
 router.get("/:id", async (req, res) => {
   const params = GetAppointmentParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: "ID inválido" });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: "ID inválido" }); return; }
+
   const rows = await db
     .select({
       appointment: appointmentsTable,
@@ -208,32 +175,17 @@ router.get("/:id", async (req, res) => {
     .where(eq(appointmentsTable.id, params.data.id))
     .limit(1);
 
-  if (!rows[0]) {
-    res.status(404).json({ error: "Turno no encontrado" });
-    return;
-  }
-  const r = rows[0];
-  res.json(
-    formatAppointment(
-      r.appointment,
-      r.barberName,
-      r.serviceName,
-      r.servicePrice ?? null
-    )
-  );
+  if (!rows[0]) { res.status(404).json({ error: "Turno no encontrado" }); return; }
+  res.json(formatAppointment(rows[0].appointment, rows[0].barberName, rows[0].serviceName, rows[0].servicePrice ?? null));
 });
 
 router.patch("/:id", async (req, res) => {
   const params = UpdateAppointmentParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: "ID inválido" });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: "ID inválido" }); return; }
+
   const parsed = UpdateAppointmentBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Datos inválidos", details: parsed.error.issues });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: "Datos inválidos", details: parsed.error.issues }); return; }
+
   const updates: Record<string, unknown> = {};
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
   if (parsed.data.notes !== undefined) updates.notes = parsed.data.notes;
@@ -246,10 +198,7 @@ router.patch("/:id", async (req, res) => {
     .where(eq(appointmentsTable.id, params.data.id))
     .returning();
 
-  if (!appointment) {
-    res.status(404).json({ error: "Turno no encontrado" });
-    return;
-  }
+  if (!appointment) { res.status(404).json({ error: "Turno no encontrado" }); return; }
 
   const rows = await db
     .select({
@@ -265,27 +214,29 @@ router.patch("/:id", async (req, res) => {
     .limit(1);
 
   const r = rows[0];
-  res.json(
-    formatAppointment(
-      r.appointment,
-      r.barberName,
-      r.serviceName,
-      r.servicePrice ?? null
-    )
-  );
+
+  // Notificar al cliente si el estado cambió a confirmado o cancelado
+  if (parsed.data.status && r.appointment.clientPhone) {
+    const statusMsg: Record<string, string> = {
+      confirmed: `✅ *Tu turno fue CONFIRMADO - BARBER M.T*\n\n📅 Fecha: ${r.appointment.date}\n⏰ Hora: ${r.appointment.timeSlot}\n💈 Servicio: ${r.serviceName ?? ""}\n\n¡Te esperamos! 💈`,
+      cancelled: `❌ *Tu turno fue CANCELADO - BARBER M.T*\n\n📅 Fecha: ${r.appointment.date}\n⏰ Hora: ${r.appointment.timeSlot}\n\nEscribinos por WhatsApp para reagendar.`,
+      completed: `🏁 *¡Gracias por visitarnos! - BARBER M.T*\n\nFue un placer atenderte. ¡Te esperamos pronto! 💈`,
+    };
+    if (statusMsg[parsed.data.status]) {
+      notifyWhatsApp(r.appointment.clientPhone, statusMsg[parsed.data.status], `Estado → ${parsed.data.status}`);
+    }
+  }
+
+  res.json(formatAppointment(r.appointment, r.barberName, r.serviceName, r.servicePrice ?? null));
 });
 
 router.delete("/:id", async (req, res) => {
   const params = DeleteAppointmentParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: "ID inválido" });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: "ID inválido" }); return; }
   await db.delete(appointmentsTable).where(eq(appointmentsTable.id, params.data.id));
   res.status(204).send();
 });
 
-// GET /appointments/export — descarga CSV con todos los turnos
 router.get("/export", async (_req, res) => {
   const rows = await db
     .select({
@@ -301,16 +252,11 @@ router.get("/export", async (_req, res) => {
 
   const escape = (v: unknown) => {
     const s = String(v ?? "");
-    return s.includes(",") || s.includes('"') || s.includes("\n")
-      ? `"${s.replace(/"/g, '""')}"`
-      : s;
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
   };
 
   const STATUS_LABELS: Record<string, string> = {
-    pending: "Pendiente",
-    confirmed: "Confirmado",
-    completed: "Completado",
-    cancelled: "Cancelado",
+    pending: "Pendiente", confirmed: "Confirmado", completed: "Completado", cancelled: "Cancelado",
   };
 
   const lines = [
@@ -318,25 +264,14 @@ router.get("/export", async (_req, res) => {
     ...rows.map((r) => {
       const a = r.appointment;
       const precio = r.servicePrice != null ? `$${r.servicePrice.toLocaleString("es-AR")}` : "";
-      return [
-        a.id,
-        escape(a.clientName),
-        escape(a.clientPhone),
-        a.date,
-        a.timeSlot,
-        escape(r.serviceName),
-        precio,
-        escape(r.barberName),
-        STATUS_LABELS[a.status] ?? a.status,
-        a.createdAt.toISOString(),
-      ].join(",");
+      return [a.id, escape(a.clientName), escape(a.clientPhone), a.date, a.timeSlot, escape(r.serviceName), precio, escape(r.barberName), STATUS_LABELS[a.status] ?? a.status, a.createdAt.toISOString()].join(",");
     }),
   ].join("\n");
 
   const date = new Date().toISOString().split("T")[0];
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="turnos-${date}.csv"`);
-  res.send("\uFEFF" + lines); // BOM para que Excel lo abra bien
+  res.send("\uFEFF" + lines);
 });
 
 export default router;
