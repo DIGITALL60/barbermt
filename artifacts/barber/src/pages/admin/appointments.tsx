@@ -321,5 +321,3 @@ export default function AppointmentsPage() {
     </AdminLayout>
   );
 }
-  );
-}
