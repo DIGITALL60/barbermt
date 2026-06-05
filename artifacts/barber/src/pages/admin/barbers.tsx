@@ -20,13 +20,26 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+// Normaliza cualquier respuesta de la API a un array
+function toArray<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  for (const key of ["data", "items", "barbers", "results"]) {
+    if (Array.isArray(obj[key])) return obj[key] as T[];
+  }
+  return [];
+}
+
 type BarberForm = { id?: number, name: string, bio: string, photoUrl: string, active: boolean };
 
 export default function BarbersPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: barbers, isLoading } = useListBarbers();
+  const { data: barbersRaw, isLoading } = useListBarbers();
+  const barbers = toArray<any>(barbersRaw);
+
   const createBarber = useCreateBarber();
   const updateBarber = useUpdateBarber();
   const deleteBarber = useDeleteBarber();
@@ -109,7 +122,7 @@ export default function BarbersPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {barbers?.map(barber => (
+            {barbers.map(barber => (
               <Card key={barber.id} className={barber.active ? "" : "opacity-60 grayscale-[0.4]"}>
                 <CardHeader className="flex flex-row items-center gap-4 pb-2">
                   <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0 border border-border">
@@ -122,7 +135,7 @@ export default function BarbersPage() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base">{barber.name}</CardTitle>
                     <CardDescription className="text-xs mt-0.5">
-                      Desde {format(new Date(barber.createdAt), "MMMM yyyy", { locale: es })}
+                      Desde {barber.createdAt ? format(new Date(barber.createdAt), "MMMM yyyy", { locale: es }) : "—"}
                     </CardDescription>
                   </div>
                 </CardHeader>
@@ -159,7 +172,7 @@ export default function BarbersPage() {
               </Card>
             ))}
 
-            {!barbers?.length && (
+            {!barbers.length && (
               <div className="col-span-full py-14 text-center text-muted-foreground border-2 border-dashed border-border rounded-lg">
                 <Scissors className="w-10 h-10 mx-auto mb-3 opacity-20" />
                 <p>No hay barberos. Agregá el primero.</p>
