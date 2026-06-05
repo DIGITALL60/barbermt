@@ -3,8 +3,10 @@ import { useGetDashboardSummary, useGetTodayAppointments, useListAppointments } 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, CheckCircle, DollarSign, Clock } from "lucide-react";
 
-function formatPrice(n: number) {
-  return `$${n.toLocaleString("es-AR")}`;
+// Seguro contra undefined/null/NaN
+function formatPrice(n: unknown) {
+  const num = Number(n ?? 0);
+  return `$${isNaN(num) ? 0 : num.toLocaleString("es-AR")}`;
 }
 
 // Normaliza cualquier respuesta de la API a un array
@@ -16,6 +18,16 @@ function toArray<T>(data: unknown): T[] {
     if (Array.isArray(obj[key])) return obj[key] as T[];
   }
   return [];
+}
+
+// Normaliza summary si viene anidado en { data: ... }
+function toSummary(raw: unknown): Record<string, any> | null {
+  if (!raw) return null;
+  const obj = raw as Record<string, unknown>;
+  if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)) {
+    return obj.data as Record<string, any>;
+  }
+  return obj as Record<string, any>;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,10 +45,11 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary();
+  const { data: summaryRaw, isLoading: isLoadingSummary } = useGetDashboardSummary();
   const { data: todayAppointmentsRaw, isLoading: isLoadingToday } = useGetTodayAppointments();
   const { data: allAppointmentsRaw, isLoading: isLoadingAll } = useListAppointments({});
 
+  const summary = toSummary(summaryRaw);
   const todayAppointments = toArray<any>(todayAppointmentsRaw);
   const allAppointments = toArray<any>(allAppointmentsRaw);
 
@@ -69,7 +82,7 @@ export default function DashboardPage() {
                 <Calendar className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{(summary as any).todayCount}</div>
+                <div className="text-3xl font-bold">{summary.todayCount ?? 0}</div>
               </CardContent>
             </Card>
             <Card>
@@ -78,7 +91,7 @@ export default function DashboardPage() {
                 <Clock className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{(summary as any).pendingCount}</div>
+                <div className="text-3xl font-bold">{summary.pendingCount ?? 0}</div>
               </CardContent>
             </Card>
             <Card>
@@ -87,7 +100,7 @@ export default function DashboardPage() {
                 <CheckCircle className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{(summary as any).weekCount}</div>
+                <div className="text-3xl font-bold">{summary.weekCount ?? 0}</div>
               </CardContent>
             </Card>
             <Card>
@@ -96,27 +109,27 @@ export default function DashboardPage() {
                 <DollarSign className="w-4 h-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{formatPrice((summary as any).totalRevenue)}</div>
+                <div className="text-3xl font-bold">{formatPrice(summary.totalRevenue)}</div>
               </CardContent>
             </Card>
           </div>
         ) : null}
 
-        {((summary as any)?.topBarber || (summary as any)?.topService) && (
+        {(summary?.topBarber || summary?.topService) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(summary as any).topBarber && (
+            {summary.topBarber && (
               <Card>
                 <CardContent className="p-6">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Barbero más solicitado</p>
-                  <p className="text-xl font-bold text-primary">{(summary as any).topBarber}</p>
+                  <p className="text-xl font-bold text-primary">{summary.topBarber}</p>
                 </CardContent>
               </Card>
             )}
-            {(summary as any).topService && (
+            {summary.topService && (
               <Card>
                 <CardContent className="p-6">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Servicio más pedido</p>
-                  <p className="text-xl font-bold text-primary">{(summary as any).topService}</p>
+                  <p className="text-xl font-bold text-primary">{summary.topService}</p>
                 </CardContent>
               </Card>
             )}
