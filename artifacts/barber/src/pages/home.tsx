@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { useListServices, useListBarbers, useGetAvailability, useCreateAppointment, getGetAvailabilityQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ function LogoMT({ className = "h-10 w-10" }: { className?: string }) {
 }
 
 export default function HomePage() {
+  const container = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [booking, setBooking] = useState<BookingState>({
@@ -54,6 +57,42 @@ export default function HomePage() {
     clientPhone: "",
     notes: ""
   });
+
+  useGSAP(() => {
+    // Hero Animations
+    if (booking.step === 0) {
+      gsap.from(".hero-text", {
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        stagger: 0.15,
+        ease: "power3.out",
+        delay: 0.2
+      });
+      gsap.fromTo(".hero-bg", 
+        { scale: 1.1 }, 
+        { scale: 1.05, duration: 10, ease: "none" }
+      );
+    } else {
+      // Flow Animations
+      gsap.from(".flow-container", {
+        y: 30,
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out",
+        clearProps: "all"
+      });
+      gsap.from(".flow-item", {
+        y: 20,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.05,
+        ease: "power2.out",
+        delay: 0.1,
+        clearProps: "all"
+      });
+    }
+  }, { dependencies: [booking.step], scope: container });
 
   const { data: servicesRaw, isLoading: isLoadingServices } = useListServices({ activeOnly: true });
   const { data: barbersRaw, isLoading: isLoadingBarbers } = useListBarbers({ activeOnly: true });
@@ -114,10 +153,12 @@ export default function HomePage() {
   const isInFlow = booking.step >= 1 && booking.step <= 4;
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col selection:bg-primary selection:text-background">
+    <div ref={container} className="min-h-[100dvh] bg-background text-foreground flex flex-col selection:bg-primary selection:text-background relative">
+      {/* Noise Texture Overlay */}
+      <div className="pointer-events-none fixed inset-0 z-50 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}></div>
 
       {/* Header */}
-      <header className="py-4 px-6 border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-20">
+      <header className="py-4 px-6 border-b border-border/50 bg-background/70 backdrop-blur-xl sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -157,23 +198,24 @@ export default function HomePage() {
         <div className="flex flex-col">
 
           {/* Hero foto de la pelu */}
-          <div className="relative w-full h-[72vh] overflow-hidden">
+          <div className="relative w-full h-[80vh] overflow-hidden">
             <img
               src="/pelu.jpeg"
               alt="Barber M.T – El local"
-              className="w-full h-full object-cover object-center scale-105"
-              style={{ filter: "brightness(0.75)" }}
+              className="hero-bg w-full h-full object-cover object-center scale-105 opacity-60"
+              style={{ filter: "contrast(1.2) grayscale(0.2)" }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+            <div className="absolute inset-0 bg-background/20" />
 
             {/* Texto hero */}
-            <div className="absolute bottom-0 left-0 right-0 p-8 md:p-14">
-              <div className="max-w-3xl">
-                <p className="text-primary text-xs font-bold uppercase tracking-[0.3em] mb-3">Barber M.T · Buenos Aires</p>
-                <h2 className="text-5xl md:text-6xl font-black uppercase leading-none tracking-tight mb-4">
-                  Para un buen día,<br />un buen corte.
+            <div className="absolute bottom-0 left-0 right-0 p-8 md:p-14 z-10">
+              <div className="max-w-4xl mx-auto w-full">
+                <p className="hero-text text-primary text-xs md:text-sm font-bold uppercase tracking-[0.4em] mb-4 text-glow">Barber M.T · Villa Maria/Cba</p>
+                <h2 className="hero-text text-6xl md:text-8xl font-display font-black uppercase leading-[0.9] tracking-tighter mb-6 text-foreground text-shadow-xl">
+                  Para un buen día,<br /><span className="text-primary">un buen corte.</span>
                 </h2>
-                <p className="text-muted-foreground text-base max-w-md leading-relaxed">
+                <p className="hero-text text-muted-foreground text-lg md:text-xl max-w-lg leading-relaxed font-light">
                   Reservá tu turno online en segundos. Sin esperas, sin llamadas.
                 </p>
               </div>
@@ -183,13 +225,13 @@ export default function HomePage() {
           {/* CTA + detalles */}
           <div className="max-w-5xl mx-auto w-full px-6 md:px-8 py-10 space-y-10">
 
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
               <Button
                 size="lg"
                 onClick={() => setBooking(prev => ({ ...prev, step: 1 }))}
-                className="font-black tracking-widest uppercase text-base px-10 h-14"
+                className="hero-text glass-button text-primary-foreground bg-primary hover:bg-primary/90 hover:scale-105 font-black tracking-[0.2em] uppercase text-sm md:text-base px-12 h-16 rounded-none shadow-[0_0_40px_rgba(234,179,8,0.2)]"
               >
-                Reservar turno <ArrowRight className="w-5 h-5 ml-2" />
+                Reservar turno <ArrowRight className="w-5 h-5 ml-3" />
               </Button>
               <div className="flex flex-col gap-2">
                 <a
@@ -243,6 +285,39 @@ export default function HomePage() {
 
             <div className="border-t border-border" />
 
+            {/* Reel destacado */}
+            <div className="flex flex-col md:flex-row gap-8 items-center glass-panel p-6 md:p-8 rounded-2xl overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-20 pointer-events-none" />
+              <div className="w-full max-w-[320px] shrink-0 mx-auto z-10 relative group">
+                <a href="https://www.instagram.com/reel/DZN5Re1x2Jl/" target="_blank" rel="noopener noreferrer" className="block relative rounded-xl overflow-hidden shadow-2xl border border-white/10">
+                  <video
+                    src="/reel.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full aspect-[9/16] bg-black object-cover pointer-events-none"
+                  />
+                  {/* Capa de interacción al hover para indicar que es un enlace */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="bg-background/80 backdrop-blur-md p-4 rounded-full flex flex-col items-center gap-1 border border-white/10 transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                      <Instagram className="w-6 h-6 text-primary" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest">Ver en IG</span>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div className="space-y-4 text-center md:text-left z-10">
+                <p className="text-primary text-xs font-bold uppercase tracking-[0.3em] text-glow">En acción</p>
+                <h3 className="text-4xl md:text-5xl font-display font-black uppercase leading-[0.9] tracking-tighter">Nuestro Estilo</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed max-w-md mx-auto md:mx-0">
+                  Cortes precisos, atención al detalle y el mejor ambiente para que disfrutes tu momento.
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
             {/* Servicios */}
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-[0.25em] font-semibold mb-5">Servicios</p>
@@ -258,10 +333,10 @@ export default function HomePage() {
                     <button
                       key={service.id}
                       onClick={() => setBooking(prev => ({ ...prev, serviceId: service.id, step: 2 }))}
-                      className="group text-left p-6 rounded-xl border border-border bg-card hover:border-primary/60 hover:bg-primary/5 transition-all duration-200"
+                      className="flow-item group text-left p-6 rounded-xl glass-panel hover:border-primary/60 hover:bg-primary/5 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(234,179,8,0.15)] transition-all duration-400"
                     >
-                      <div className="flex justify-between items-start gap-2 mb-3">
-                        <span className="font-bold text-lg group-hover:text-primary transition-colors leading-tight">{service.name}</span>
+                      <div className="flex justify-between items-start gap-2 mb-4">
+                        <span className="font-display font-bold text-2xl group-hover:text-primary transition-colors leading-tight">{service.name}</span>
                         <span className="text-primary font-black text-xl shrink-0">{formatPrice(service.price)}</span>
                       </div>
                       <div className="flex items-center gap-3 text-muted-foreground text-xs">
@@ -279,7 +354,7 @@ export default function HomePage() {
             <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-3">
                 <LogoMT className="h-7 w-7 opacity-60" />
-                <span>© 2026 Barber M.T - "Creado por DIGITALL"</span>
+                <span>© 2026 Barber M.T - "Creado por <a href="https://www.digitall.baby" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors underline decoration-primary/50 underline-offset-4 font-bold">DIGITALL</a>"</span>
               </div>
               <div className="flex items-center gap-4">
                 <a href="https://instagram.com/mtbarbervm" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-primary transition-colors">
@@ -307,11 +382,11 @@ export default function HomePage() {
 
           {/* Paso 1 – Servicio */}
           {booking.step === 1 && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto w-full">
+            <div className="flow-container max-w-2xl mx-auto w-full">
               <button onClick={() => setBooking(prev => ({ ...prev, step: 0 }))} className="flex items-center text-muted-foreground hover:text-primary mb-6 transition-colors font-medium tracking-wide uppercase text-sm">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Volver
               </button>
-              <h2 className="text-3xl font-bold mb-2 text-center uppercase tracking-wider">Elegí tu servicio</h2>
+              <h2 className="text-3xl font-display font-black mb-2 text-center uppercase tracking-wider">Elegí tu servicio</h2>
               <p className="text-center text-muted-foreground mb-8 text-sm">Todos los servicios incluyen perfilado, cera y cafecito</p>
               {isLoadingServices ? (
                 <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
@@ -320,10 +395,10 @@ export default function HomePage() {
                   {services.map(service => (
                     <button
                       key={service.id}
-                      className={`text-left group relative overflow-hidden rounded-xl border transition-all duration-300
+                      className={`flow-item text-left group relative overflow-hidden rounded-xl border transition-all duration-400 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(234,179,8,0.2)]
                         ${booking.serviceId === service.id
-                          ? 'border-primary ring-1 ring-primary bg-primary/5'
-                          : 'border-border bg-card hover:border-primary/50'}`}
+                          ? 'border-primary ring-1 ring-primary bg-primary/10 glass-panel'
+                          : 'glass-panel hover:border-primary/50'}`}
                       onClick={() => {
                         setBooking(prev => ({ ...prev, serviceId: service.id }));
                         setTimeout(handleNext, 300);
@@ -350,11 +425,11 @@ export default function HomePage() {
 
           {/* Paso 2 – Barbero */}
           {booking.step === 2 && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto w-full">
+            <div className="flow-container max-w-2xl mx-auto w-full">
               <button onClick={handleBack} className="flex items-center text-muted-foreground hover:text-primary mb-6 transition-colors font-medium tracking-wide uppercase text-sm">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Volver
               </button>
-              <h2 className="text-3xl font-bold mb-2 text-center uppercase tracking-wider">Tu barbero</h2>
+              <h2 className="text-3xl font-display font-black mb-2 text-center uppercase tracking-wider">Tu barbero</h2>
               <p className="text-center text-muted-foreground mb-8 text-sm">¿Con quién querés atenderte?</p>
               {isLoadingBarbers ? (
                 <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
@@ -363,10 +438,10 @@ export default function HomePage() {
                   {barbers.map(barber => (
                     <button
                       key={barber.id}
-                      className={`text-left group relative overflow-hidden rounded-xl border transition-all duration-300
+                      className={`flow-item text-left group relative overflow-hidden rounded-xl border transition-all duration-400 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(234,179,8,0.2)]
                         ${booking.barberId === barber.id
-                          ? 'border-primary ring-1 ring-primary bg-primary/5'
-                          : 'border-border bg-card hover:border-primary/50'}`}
+                          ? 'border-primary ring-1 ring-primary bg-primary/10 glass-panel'
+                          : 'glass-panel hover:border-primary/50'}`}
                       onClick={() => {
                         setBooking(prev => ({ ...prev, barberId: barber.id }));
                         setTimeout(handleNext, 300);
@@ -393,11 +468,11 @@ export default function HomePage() {
 
           {/* Paso 3 – Fecha y horario */}
           {booking.step === 3 && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-3xl mx-auto">
+            <div className="flow-container w-full max-w-3xl mx-auto">
               <button onClick={handleBack} className="flex items-center text-muted-foreground hover:text-primary mb-6 transition-colors font-medium tracking-wide uppercase text-sm">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Volver
               </button>
-              <h2 className="text-3xl font-bold mb-2 text-center uppercase tracking-wider">Elegí fecha y horario</h2>
+              <h2 className="text-3xl font-display font-black mb-2 text-center uppercase tracking-wider">Elegí fecha y horario</h2>
               <p className="text-center text-muted-foreground mb-8 text-sm">Seleccioná el día y el horario disponible</p>
 
               <div className="grid md:grid-cols-2 gap-8 items-start">
@@ -463,11 +538,11 @@ export default function HomePage() {
 
           {/* Paso 4 – Confirmar */}
           {booking.step === 4 && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto w-full">
+            <div className="flow-container max-w-4xl mx-auto w-full">
               <button onClick={handleBack} className="flex items-center text-muted-foreground hover:text-primary mb-6 transition-colors font-medium tracking-wide uppercase text-sm">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Volver
               </button>
-              <h2 className="text-3xl font-bold mb-2 text-center uppercase tracking-wider">Confirmá tu turno</h2>
+              <h2 className="text-3xl font-display font-black mb-2 text-center uppercase tracking-wider">Confirmá tu turno</h2>
               <p className="text-center text-muted-foreground mb-8 text-sm">Revisá los detalles e ingresá tus datos</p>
 
               <div className="grid md:grid-cols-5 gap-8">
@@ -535,11 +610,11 @@ export default function HomePage() {
 
           {/* Paso 5 – Confirmación */}
           {booking.step === 5 && (
-            <div className="animate-in zoom-in-95 duration-500 max-w-md mx-auto w-full text-center mt-12">
+            <div className="flow-container max-w-md mx-auto w-full text-center mt-12">
               <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-primary">
                 <CheckCircle2 className="w-12 h-12 text-primary" />
               </div>
-              <h2 className="text-4xl font-black mb-4 uppercase tracking-tight">¡Turno confirmado!</h2>
+              <h2 className="text-4xl font-display font-black mb-4 uppercase tracking-tight">¡Turno confirmado!</h2>
               <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
                 Tu turno con <strong className="text-foreground">{selectedBarber?.name}</strong> está agendado para el{" "}
                 <strong className="text-foreground capitalize">

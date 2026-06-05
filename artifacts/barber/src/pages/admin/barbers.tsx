@@ -206,12 +206,27 @@ export default function BarbersPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>URL de foto (opcional)</Label>
-                <Input
-                  value={formData.photoUrl}
-                  onChange={e => setFormData({ ...formData, photoUrl: e.target.value })}
-                  placeholder="https://..."
-                />
+                <Label>Foto de perfil (galería)</Label>
+                <div className="flex items-center gap-4">
+                  {formData.photoUrl && (
+                    <img src={formData.photoUrl} alt="Preview" className="w-12 h-12 rounded-full object-cover border border-border shrink-0" />
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="cursor-pointer file:cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setFormData({ ...formData, photoUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>
