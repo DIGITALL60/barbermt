@@ -50,7 +50,7 @@ export default function HomePage() {
   const API_BASE = import.meta.env.VITE_API_URL || "";
   const { data: schedule } = useQuery<{ dayOfWeek: number; enabled: boolean; startHour: number; endHour: number }[]>({
     queryKey: ["schedule"],
-    queryFn: () => fetch(`${API_BASE}/api/schedule`).then(r => r.json()),
+    queryFn: () => fetch(`${API_BASE}/api/schedule`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   });
 
   const disabledDays = (date: Date) => {
