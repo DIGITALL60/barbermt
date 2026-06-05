@@ -18,13 +18,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Plus, Edit, Trash2, Clock, Scissors, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Normaliza cualquier respuesta de la API a un array
+function toArray<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  for (const key of ["data", "items", "services", "results"]) {
+    if (Array.isArray(obj[key])) return obj[key] as T[];
+  }
+  return [];
+}
+
 type ServiceForm = { id?: number, name: string, description: string, price: string, durationMinutes: string, active: boolean };
 
 export default function ServicesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: services, isLoading } = useListServices();
+  const { data: servicesRaw, isLoading } = useListServices();
+  const services = toArray<any>(servicesRaw);
+
   const createService = useCreateService();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
@@ -108,13 +121,13 @@ export default function ServicesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {services?.map(service => (
+            {services.map(service => (
               <Card key={service.id} className={service.active ? "" : "opacity-60 grayscale-[0.4]"}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-lg font-bold leading-tight">{service.name}</CardTitle>
                     <div className="text-xl font-black text-primary shrink-0">
-                      ${Number(service.price).toLocaleString("es-AR")}
+                      ${Number(service.price ?? 0).toLocaleString("es-AR")}
                     </div>
                   </div>
                   <div className="flex items-center text-sm text-muted-foreground mt-1 gap-1">
@@ -141,8 +154,8 @@ export default function ServicesPage() {
                         id: service.id,
                         name: service.name,
                         description: service.description || "",
-                        price: service.price.toString(),
-                        durationMinutes: service.durationMinutes.toString(),
+                        price: String(service.price ?? ""),
+                        durationMinutes: String(service.durationMinutes ?? "30"),
                         active: service.active
                       })}>
                         <Edit className="w-4 h-4 text-muted-foreground" />
@@ -156,7 +169,7 @@ export default function ServicesPage() {
               </Card>
             ))}
 
-            {!services?.length && (
+            {!services.length && (
               <div className="col-span-full py-14 text-center text-muted-foreground border-2 border-dashed border-border rounded-lg">
                 <Scissors className="w-10 h-10 mx-auto mb-3 opacity-20" />
                 <p>No hay servicios. Agregá el primero.</p>
