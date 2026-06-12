@@ -4,6 +4,13 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
+const DEFAULT_SETTINGS = {
+  welcomeMessage: `💈 *BARBER M.T* 💈\n\n¡Bienvenido!\nSoy el asistente de reservas de BARBER M.T.\n\n📅 *RESERVAR* → Solicitar un turno\n❌ *CANCELAR* → Cancelar una reserva\n👀 *MIS TURNOS* → Consultar tus turnos\n\n📍Gracias por elegir BARBER M.T.`,
+  confirmationMessage: `✅ *¡TURNO CONFIRMADO - BARBER M.T!*\n\n👤 Cliente: {cliente}\n📅 Fecha: {fecha}\n⏰ Hora: {hora}\n💈 Servicio: {servicio}\n👨‍💼 Barbero: {barbero}\n💵 Precio: \${precio}\n\n¡Te esperamos! Para cambios escribinos nuevamente. 💈`,
+  cancellationMessage: `✅ Tu turno del *{fecha}* a las *{hora}* fue cancelado.`,
+  notificationsEnabled: true
+};
+
 // Get bot settings
 router.get("/", async (req, res) => {
   try {
@@ -11,8 +18,17 @@ router.get("/", async (req, res) => {
     
     if (settings.length === 0) {
       // Create default settings if none exist
-      const newSettings = await db.insert(botSettingsTable).values({}).returning();
+      const newSettings = await db.insert(botSettingsTable).values(DEFAULT_SETTINGS).returning();
       return res.json(newSettings[0]);
+    }
+    
+    // Fix existing empty rows
+    if (!settings[0].welcomeMessage || settings[0].welcomeMessage.includes("\\n")) {
+      const updated = await db.update(botSettingsTable)
+        .set(DEFAULT_SETTINGS)
+        .where(eq(botSettingsTable.id, settings[0].id))
+        .returning();
+      return res.json(updated[0]);
     }
     
     res.json(settings[0]);
