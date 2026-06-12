@@ -104,13 +104,13 @@ export default function BotAdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">WhatsApp Bot</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">WhatsApp Bot</h2>
+        <p className="text-muted-foreground text-sm md:text-base">
           Administra la conexión y los mensajes automáticos de tu asistente virtual.
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         {/* Connection Status Card */}
         <Card>
           <CardHeader>
@@ -137,11 +137,11 @@ export default function BotAdminPage() {
                 </p>
               </div>
             ) : isWaitingQR && qrCode ? (
-              <div className="flex flex-col items-center space-y-4 py-4">
-                <div className="rounded-lg bg-white p-4 shadow-sm">
-                  <QRCodeSVG value={qrCode} size={200} />
+              <div className="flex flex-col items-center space-y-4 py-4 w-full">
+                <div className="rounded-xl bg-white p-4 shadow-md w-full max-w-[260px] mx-auto">
+                  <QRCodeSVG value={qrCode} size={undefined} style={{ width: '100%', height: 'auto', display: 'block' }} />
                 </div>
-                <p className="text-center font-medium animate-pulse">
+                <p className="text-center font-medium animate-pulse text-sm md:text-base">
                   Escanea el QR con tu WhatsApp para conectar
                 </p>
               </div>
