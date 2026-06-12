@@ -11,6 +11,7 @@ import BarbersPage from "@/pages/admin/barbers";
 import ServicesPage from "@/pages/admin/services";
 import SchedulePage from "@/pages/admin/schedule";
 import FinancesPage from "@/pages/admin/finances";
+import BotPage from "@/pages/admin/bot";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import { AdminLogin } from "@/components/admin-login";
 
@@ -43,6 +44,9 @@ function Router() {
       </Route>
       <Route path="/admin/finances">
         {() => <AdminGuard component={FinancesPage} />}
+      </Route>
+      <Route path="/admin/bot">
+        {() => <AdminGuard component={BotPage} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

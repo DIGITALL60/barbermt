@@ -148,8 +148,20 @@ async function apiPost(endpoint, body) {
     return r.json();
 }
 
+async function getBotSettings() {
+    try {
+        const r = await fetch(`${API_BASE}/api/bot-settings`);
+        if (r.ok) return await r.json();
+    } catch (e) {
+        console.error('Error fetching bot settings:', e.message);
+    }
+    return null;
+}
+
 let sock = null;
 let connectionAttempts = 0;
+let botStatus = 'desconectado';
+let currentQR = null;
 
 async function sendWhatsAppMessage(to, text) {
     if (!sock || !sock.user) { console.warn('⚠️ Bot no conectado.'); return false; }
@@ -182,6 +194,8 @@ async function connectToWhatsApp() {
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
+            botStatus = 'esperando_qr';
+            currentQR = qr;
             console.log('\n==================================================');
             console.log('📢 ESCANEA EL CÓDIGO QR CON TU WHATSAPP');
             console.log('==================================================\n');
@@ -198,9 +212,13 @@ async function connectToWhatsApp() {
                 setTimeout(connectToWhatsApp, delayMs);
             } else {
                 console.error('❌ Sesión cerrada permanentemente.');
+                botStatus = 'desconectado';
+                currentQR = null;
             }
         } else if (connection === 'open') {
             connectionAttempts = 0;
+            botStatus = 'conectado';
+            currentQR = null;
             console.log('✅ ¡WhatsApp conectado!');
         }
     });
@@ -261,7 +279,10 @@ async function handleIncomingMessage(msg) {
                 ).join('\n');
             }
         } catch (_) {}
-        await reply(`💈 *BARBER M.T* 💈\n\n¡Bienvenido!\nSoy el asistente de reservas de BARBER M.T.\n\n📅 *RESERVAR* → Solicitar un turno\n❌ *CANCELAR* → Cancelar una reserva\n👀 *MIS TURNOS* → Consultar tus turnos${serviciosList}\n\n📍Gracias por elegir BARBER M.T.`);
+        const settings = await getBotSettings();
+        const defaultWelcome = `💈 *BARBER M.T* 💈\n\n¡Bienvenido!\nSoy el asistente de reservas de BARBER M.T.\n\n📅 *RESERVAR* → Solicitar un turno\n❌ *CANCELAR* → Cancelar una reserva\n👀 *MIS TURNOS* → Consultar tus turnos\n\n📍Gracias por elegir BARBER M.T.`;
+        const welcomeText = settings?.welcomeMessage || defaultWelcome;
+        await reply(`${welcomeText}${serviciosList ? '\n' + serviciosList : ''}`);
         return;
     }
 
@@ -280,7 +301,12 @@ async function handleIncomingMessage(msg) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'cancelled' })
                 });
-                if (r.ok) await reply(`✅ Tu turno del *${last.date}* a las *${last.timeSlot}* fue cancelado.`);
+                if (r.ok) {
+                    const settings = await getBotSettings();
+                    let cancelText = settings?.cancellationMessage || `✅ Tu turno del *{fecha}* a las *{hora}* fue cancelado.`;
+                    cancelText = cancelText.replace('{fecha}', last.date).replace('{hora}', last.timeSlot);
+                    await reply(cancelText);
+                }
                 else throw new Error('API error');
             } else {
                 await reply(`❌ No tenés turnos activos para cancelar. Escribí *RESERVAR* para agendar uno nuevo.`);
@@ -461,7 +487,15 @@ async function handleIncomingMessage(msg) {
                 timeSlot: session.timeSlot,
                 notes: 'Reservado vía WhatsApp'
             });
-            await reply(`✅ *¡TURNO CONFIRMADO - BARBER M.T!*\n\n👤 Cliente: ${clientName}\n📅 Fecha: ${session.date}\n⏰ Hora: ${session.timeSlot}\n💈 Servicio: ${session.serviceName}\n👨‍💼 Barbero: ${session.barberName}\n💵 Precio: $${Number(session.servicePrice).toLocaleString('es-AR')}\n\n¡Te esperamos! Para cambios escribinos nuevamente. 💈`);
+            const settings = await getBotSettings();
+            let confirmText = settings?.confirmationMessage || `✅ *¡TURNO CONFIRMADO - BARBER M.T!*\n\n👤 Cliente: {cliente}\n📅 Fecha: {fecha}\n⏰ Hora: {hora}\n💈 Servicio: {servicio}\n👨‍💼 Barbero: {barbero}\n💵 Precio: ${precio}\n\n¡Te esperamos! Para cambios escribinos nuevamente. 💈`;
+            confirmText = confirmText.replace('{cliente}', clientName)
+                                     .replace('{fecha}', session.date)
+                                     .replace('{hora}', session.timeSlot)
+                                     .replace('{servicio}', session.serviceName)
+                                     .replace('{barbero}', session.barberName)
+                                     .replace('{precio}', Number(session.servicePrice).toLocaleString('es-AR'));
+            await reply(confirmText);
             console.log(`✅ Turno creado para ${clientName} (${phone}) - ${session.date} ${session.timeSlot}`);
         } catch (err) {
             console.error('Error creando turno:', err.message);
@@ -489,7 +523,27 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (req, res) => {
-    res.json({ success: true, sistema: 'BARBER M.T - WhatsApp Bot', botStatus: sock ? 'Activo' : 'No inicializado', apiBase: API_BASE });
+    res.json({ success: true, sistema: 'BARBER M.T - WhatsApp Bot', botStatus, apiBase: API_BASE });
+});
+
+app.get('/api/status', (req, res) => {
+    res.json({ success: true, status: botStatus, qr: currentQR });
+});
+
+app.post('/api/disconnect', async (req, res) => {
+    if (sock) {
+        try {
+            await sock.logout();
+            botStatus = 'desconectado';
+            currentQR = null;
+            sock = null;
+            setTimeout(connectToWhatsApp, 3000);
+            return res.json({ success: true, message: 'Bot desconectado. Iniciando nueva sesión...' });
+        } catch (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+    }
+    res.json({ success: false, message: 'El bot no estaba conectado.' });
 });
 
 app.post('/api/notify', async (req, res) => {

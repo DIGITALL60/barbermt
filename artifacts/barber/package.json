@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
-    "gsap": "^3.15.0"
+    "gsap": "^3.15.0",
+    "qrcode.react": "^4.2.0"
   }
 }

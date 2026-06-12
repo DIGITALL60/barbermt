@@ -9,6 +9,7 @@ import financeRouter from "./finance";
 import whatsappRouter from "./whatsapp";
 import scheduleRouter from "./schedule";
 import authRouter from "./auth";
+import botSettingsRouter from "./bot-settings";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,7 @@ router.use("/finance", financeRouter);
 router.use("/whatsapp", whatsappRouter);
 router.use("/schedule", scheduleRouter);
 router.use("/auth", authRouter);
+router.use("/bot-settings", botSettingsRouter);
+
 
 export default router;

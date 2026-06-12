@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Calendar, Users, Scissors, LayoutDashboard,
-  ExternalLink, Activity, Clock, LogOut, Menu, X, TrendingUp
+  ExternalLink, Activity, Clock, LogOut, Menu, X, TrendingUp, MessageSquare
 } from "lucide-react";
 import { useHealthCheck } from "@workspace/api-client-react";
 import { useAdminAuth } from "@/lib/admin-auth";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin/barbers", label: "Barberos", icon: Users },
   { href: "/admin/services", label: "Servicios", icon: Scissors },
   { href: "/admin/finances", label: "Finanzas", icon: TrendingUp },
+  { href: "/admin/bot", label: "WhatsApp Bot", icon: MessageSquare },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
