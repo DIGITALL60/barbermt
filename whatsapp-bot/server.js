@@ -214,6 +214,10 @@ async function connectToWhatsApp() {
                 console.error('❌ Sesión cerrada permanentemente.');
                 botStatus = 'desconectado';
                 currentQR = null;
+                sock = null;
+                // Borrar carpeta auth para permitir escanear de nuevo
+                try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (e) {}
+                setTimeout(connectToWhatsApp, 3000);
             }
         } else if (connection === 'open') {
             connectionAttempts = 0;
@@ -531,19 +535,17 @@ app.get('/api/status', (req, res) => {
 });
 
 app.post('/api/disconnect', async (req, res) => {
-    if (sock) {
-        try {
-            await sock.logout();
-            botStatus = 'desconectado';
-            currentQR = null;
-            sock = null;
-            setTimeout(connectToWhatsApp, 3000);
-            return res.json({ success: true, message: 'Bot desconectado. Iniciando nueva sesión...' });
-        } catch (err) {
-            return res.status(500).json({ success: false, error: err.message });
+    try {
+        if (sock) {
+            await sock.logout().catch(() => {});
         }
-    }
-    res.json({ success: false, message: 'El bot no estaba conectado.' });
+    } catch (e) {}
+    botStatus = 'desconectado';
+    currentQR = null;
+    sock = null;
+    try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (e) {}
+    setTimeout(connectToWhatsApp, 1500);
+    return res.json({ success: true, message: 'Bot reiniciando para nuevo QR...' });
 });
 
 app.post('/api/notify', async (req, res) => {
