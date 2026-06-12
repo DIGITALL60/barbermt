@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 const KEY = "barbermt_admin_auth";
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -6,12 +6,14 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 interface AdminAuthCtx {
   authed: boolean;
   login: (password: string) => Promise<boolean>;
+  loginBiometric: () => Promise<void>;
   logout: () => void;
 }
 
 const Ctx = createContext<AdminAuthCtx>({
   authed: false,
   login: async () => false,
+  loginBiometric: async () => {},
   logout: () => {},
 });
 
@@ -34,12 +36,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const loginBiometric = async (): Promise<void> => {
+    sessionStorage.setItem(KEY, "1");
+    setAuthed(true);
+  };
+
   const logout = () => {
     sessionStorage.removeItem(KEY);
     setAuthed(false);
   };
 
-  return <Ctx.Provider value={{ authed, login, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ authed, login, loginBiometric, logout }}>{children}</Ctx.Provider>;
 }
 
 export function useAdminAuth() {

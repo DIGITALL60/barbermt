@@ -12,6 +12,7 @@ import ServicesPage from "@/pages/admin/services";
 import SchedulePage from "@/pages/admin/schedule";
 import FinancesPage from "@/pages/admin/finances";
 import BotPage from "@/pages/admin/bot";
+import SecurityPage from "@/pages/admin/security";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import { AdminLogin } from "@/components/admin-login";
 
@@ -47,6 +48,9 @@ function Router() {
       </Route>
       <Route path="/admin/bot">
         {() => <AdminGuard component={BotPage} />}
+      </Route>
+      <Route path="/admin/security">
+        {() => <AdminGuard component={SecurityPage} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
