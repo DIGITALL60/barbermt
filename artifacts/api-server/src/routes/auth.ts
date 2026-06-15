@@ -9,9 +9,18 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "barber123";
 
 // WebAuthn Config
 const rpName = "Barber M.T";
-// In a real app, origins should be exact and from env.
-const origin = process.env.FRONTEND_URL || "http://localhost:5173";
-const rpID = new URL(origin).hostname;
+
+// rpID must be the effective domain of the app (no protocol, no port).
+// Set RP_ID env var explicitly, e.g. "barbermt.barber.vercel.app".
+// Falls back to extracting hostname from FRONTEND_URL, then to "localhost".
+const rpID = process.env.RP_ID ||
+  (process.env.FRONTEND_URL ? new URL(process.env.FRONTEND_URL).hostname : "localhost");
+
+// Accepted origins: always include localhost for dev, plus the production URL if set.
+const allowedOrigins: string[] = ["http://localhost:5173", "http://localhost:3000"];
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ""));
+}
 
 // Temporary in-memory store for challenges
 // In a production multi-server setup this should go to Redis or DB
@@ -78,7 +87,7 @@ router.post("/verify-registration", async (req, res) => {
     const verification = await verifyRegistrationResponse({
       response: body,
       expectedChallenge,
-      expectedOrigin: origin,
+      expectedOrigin: allowedOrigins,
       expectedRPID: rpID,
     });
 
@@ -160,7 +169,7 @@ router.post("/verify-authentication", async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response: body,
       expectedChallenge,
-      expectedOrigin: origin,
+      expectedOrigin: allowedOrigins,
       expectedRPID: rpID,
       authenticator: {
         credentialID: passkey.credentialId,
