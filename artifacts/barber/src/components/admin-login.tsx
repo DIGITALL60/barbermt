@@ -41,10 +41,10 @@ export function AdminLogin() {
       }
       const options = await resp.json();
 
-      // 2. Start WebAuthn authentication
+      // 2. Start WebAuthn authentication (v13+ API requires { optionsJSON })
       let asseResp;
       try {
-        asseResp = await startAuthentication(options);
+        asseResp = await startAuthentication({ optionsJSON: options });
       } catch (error: any) {
         throw new Error("Autenticación cancelada o fallida");
       }

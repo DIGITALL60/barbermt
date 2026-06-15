@@ -20,10 +20,10 @@ export default function SecurityAdminPage() {
       }
       const options = await resp.json();
 
-      // 2. Start WebAuthn registration
+      // 2. Start WebAuthn registration (v13+ API requires { optionsJSON })
       let attResp;
       try {
-        attResp = await startRegistration(options);
+        attResp = await startRegistration({ optionsJSON: options });
       } catch (error: any) {
         if (error.name === 'InvalidStateError') {
           throw new Error("Este dispositivo ya está registrado.");
